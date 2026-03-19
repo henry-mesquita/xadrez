@@ -1,0 +1,284 @@
+import pygame as pg
+from os.path import join
+from pygame import Vector2 as vetor
+import numpy as np
+
+class Peca:
+    def __init__(
+        self,
+        cor: str,
+        tipo: str,
+        TAMANHO_PECA: int,
+        posicao: vetor
+    ) -> None:
+        """
+        Inicializa uma peça.
+
+        Args:
+            cor (str): Cor da peça ('w' para branco ou 'b' para preto).
+            tipo (str): Tipo da peça ('p' para peão, 'r' para torre, 'n' para cavalo, 'b' para bispo, 'q' para dama, 'k' para rei).
+            TAMANHO_PECA (int): Tamanho da peça.
+            posicao (vetor): Posição da peça.
+        """
+        if tipo.lower() not in ('p', 'r', 'n', 'b', 'q', 'k'):
+            raise ValueError("Tipo tem que estar em: ('p', 'r', 'n', 'b', 'q', 'k')")
+        elif cor.lower() not in ('b', 'w'):
+            raise ValueError("Cor tem que estar em: ('b', 'w')")
+        
+        self.mapa = {
+            ('w','p'): 'peao_branco.png',
+            ('b','p'): 'peao_preto.png',
+            ('w','r'): 'torre_branca.png',
+            ('b','r'): 'torre_preta.png',
+            ('w','n'): 'cavalo_branco.png',
+            ('b','n'): 'cavalo_preto.png',
+            ('w','b'): 'bispo_branco.png',
+            ('b','b'): 'bispo_preto.png',
+            ('w','q'): 'dama_branca.png',
+            ('b','q'): 'dama_preta.png',
+            ('w','k'): 'rei_branco.png',
+            ('b','k'): 'rei_preto.png'
+        }
+        
+        self.cor: str    = cor.lower()
+        self.tipo: str   = tipo.lower()
+
+        self.posicao = posicao.copy() # Posição do sprite
+        self.inicializar_sprite((TAMANHO_PECA, TAMANHO_PECA))
+        self.rect: pg.Rect = self.sprite.get_rect(topleft=self.posicao)
+    
+
+    def __str__(self) -> str:
+        return f'Tipo: {self.tipo} | Cor: {self.cor}'
+    
+
+    def __repr__(self) -> str:
+        return f"Peca({self.tipo}, {self.cor})"
+
+
+    def inicializar_sprite(self, dimensoes_sprite: tuple[int, int]) -> None:
+        """
+        Inicializa o sprite da peça.
+        
+        Args:
+            dimensoes_sprite (tuple[int, int]): Dimensões do sprite (largura, altura).
+        """
+        caminho = self.mapa[(str(self.cor), str(self.tipo))]
+        self.imagem_original = pg.image.load(join('img', caminho)).convert_alpha()
+        self.sprite = pg.transform.scale(self.imagem_original, dimensoes_sprite)
+    
+
+    def desenhar_sprite(self, tela: pg.Surface) -> None:
+        """
+        Desenha o sprite da peça na tela.
+        
+        Args:
+            tela (pg.Surface): Superfície na qual é desenhado o sprite.
+        """
+        tela.blit(self.sprite, self.rect)
+    
+
+    def gerar_movimentos_possiveis(self, matriz: np.ndarray, lc: tuple[int, int]) -> list:
+        """
+        Gera os movimentos possíveis para a peça selecionada de acordo com o tipo dela.
+
+        Args:
+            matriz (np.ndarray): Matriz do tabuleiro.
+            lc (tuple[int, int]): Linha e coluna da peça.
+
+        Returns:
+            list: Lista de movimentos possíveis.
+        """
+        match self.tipo:
+            case 'b': # bispo
+                return self.gerar_mov_bispo(matriz, lc)
+            case 'r': # torre
+                return self.gerar_mov_torre(matriz, lc)
+            case 'q': # dama
+                return self.gerar_mov_dama(matriz, lc)
+            case 'p': # peão
+                return self.gerar_mov_peao(matriz, lc)
+            case 'n': # cavalo
+                return self.gerar_mov_cavalo(matriz, lc)
+            case 'k': # rei
+                return self.gerar_mov_rei(matriz, lc)
+
+        return []
+
+
+    def gerar_mov_bispo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list:
+        """
+        Gera os movimentos possíveis caso o tipo da peça seja o bispo (b).
+
+        Args:
+            matriz (np.ndarray): Matriz do tabuleiro.
+            lc (tuple[int, int]): Linha e coluna da peça.
+
+        Returns:
+            list: Lista de movimentos possíveis.
+        """
+        mov = []
+
+        direcoes = ((-1, -1), (-1, 1), (1, -1), (1, 1))
+
+        for direcao in direcoes:
+            l = lc[0]
+            c = lc[1]
+            while True:
+                l += direcao[0]
+                c += direcao[1]
+
+                if not (0 <= l < 8 and 0 <= c < 8):
+                    break
+
+                mov.append((l, c))
+        
+        return mov
+
+
+    def gerar_mov_torre(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+        """
+        Gera os movimentos possíveis caso o tipo da peça seja a torre (r).
+
+        Args:
+            matriz (np.ndarray): Matriz do tabuleiro.
+            lc (tuple[int, int]): Linha e coluna da peça.
+
+        Returns:
+            list: Lista de movimentos possíveis.
+        """
+        mov = []
+
+        direcoes = ((0, 1), (0, -1), (1, 0), (-1, 0))
+
+        for direcao in direcoes:
+            l = lc[0]
+            c = lc[1]
+            while True:
+                l += direcao[0]
+                c += direcao[1]
+
+                if not (0 <= l < 8 and 0 <= c < 8):
+                    break
+
+                mov.append((l, c))
+        
+        return mov
+
+
+    def gerar_mov_dama(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+        """
+        Gera os movimentos possíveis caso o tipo da peça seja a dama (q).
+
+        Args:
+            matriz (np.ndarray): Matriz do tabuleiro.
+            lc (tuple[int, int]): Linha e coluna da peça.
+
+        Returns:
+            list: Lista de movimentos possíveis.
+        """
+        return self.gerar_mov_bispo(matriz, lc) + self.gerar_mov_torre(matriz, lc)
+
+
+    def gerar_mov_peao(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+        """
+        Gera os movimentos possíveis caso o tipo da peça seja o peão (p).
+
+        Args:
+            matriz (np.ndarray): Matriz do tabuleiro.
+            lc (tuple[int, int]): Linha e coluna da peça.
+
+        Returns:
+            list: Lista de movimentos possíveis.
+        """
+
+        mov = []
+
+        if self.cor == 'w': # se cor for branco
+            
+            offsets_peao = [
+                (-1, 0)
+            ]
+
+            if lc[0] == 6:
+                offsets_peao.append((-2, 0))
+        else: # se cor for preto
+            offsets_peao = [
+                (1, 0)
+            ]
+
+            if lc[0] == 1:
+                offsets_peao.append((2, 0))
+
+        
+        for offset in offsets_peao:
+            casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
+            if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
+                mov.append(casa_destino)
+
+        return mov
+
+    
+    def gerar_mov_cavalo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+        """
+        Gera os movimentos possíveis caso o tipo da peça seja o cavalo (n).
+
+        Args:
+            matriz (np.ndarray): Matriz do tabuleiro.
+            lc (tuple[int, int]): Linha e coluna da peça.
+
+        Returns:
+            list: Lista de movimentos possíveis.
+        """
+        mov = []
+
+        offsets_cavalo = [
+            (-2, -1),
+            (-2, 1),
+            (-1, -2),
+            (-1, 2),
+            (2, -1),
+            (2, 1),
+            (1, -2),
+            (1, 2)
+        ]
+
+        for offset in offsets_cavalo:
+            casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
+            if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
+                mov.append(casa_destino)
+
+        return mov
+
+
+    def gerar_mov_rei(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+        """
+        Gera os movimentos possíveis caso o tipo da peça seja o rei (k).
+
+        Args:
+            matriz (np.ndarray): Matriz do tabuleiro.
+            lc (tuple[int, int]): Linha e coluna da peça.
+
+        Returns:
+            list: Lista de movimentos possíveis.
+        """
+
+        mov = []
+
+        offsets_rei = [
+            (0, 1),
+            (0, -1),
+            (1, 0),
+            (-1, 0),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1)
+        ]
+
+        for offset in offsets_rei:
+            casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
+            if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
+                mov.append(casa_destino)
+
+        return mov
