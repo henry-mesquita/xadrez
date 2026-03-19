@@ -63,7 +63,7 @@ class Peca:
         Args:
             dimensoes_sprite (tuple[int, int]): Dimensões do sprite (largura, altura).
         """
-        caminho = self.MAPA_IMG[(str(self.cor), str(self.tipo))]
+        caminho = Peca.MAPA_IMG[(str(self.cor), str(self.tipo))]
         self.imagem_original = pg.image.load(join('img', caminho)).convert_alpha()
         self.sprite = pg.transform.scale(self.imagem_original, dimensoes_sprite)
     
