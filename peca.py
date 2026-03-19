@@ -4,6 +4,21 @@ from pygame import Vector2 as vetor
 import numpy as np
 
 class Peca:
+    MAPA_IMG = {
+        ('w','p'): 'peao_branco.png',
+        ('b','p'): 'peao_preto.png',
+        ('w','r'): 'torre_branca.png',
+        ('b','r'): 'torre_preta.png',
+        ('w','n'): 'cavalo_branco.png',
+        ('b','n'): 'cavalo_preto.png',
+        ('w','b'): 'bispo_branco.png',
+        ('b','b'): 'bispo_preto.png',
+        ('w','q'): 'dama_branca.png',
+        ('b','q'): 'dama_preta.png',
+        ('w','k'): 'rei_branco.png',
+        ('b','k'): 'rei_preto.png'
+    }
+
     def __init__(
         self,
         cor: str,
@@ -24,21 +39,6 @@ class Peca:
             raise ValueError("Tipo tem que estar em: ('p', 'r', 'n', 'b', 'q', 'k')")
         elif cor.lower() not in ('b', 'w'):
             raise ValueError("Cor tem que estar em: ('b', 'w')")
-        
-        self.mapa = {
-            ('w','p'): 'peao_branco.png',
-            ('b','p'): 'peao_preto.png',
-            ('w','r'): 'torre_branca.png',
-            ('b','r'): 'torre_preta.png',
-            ('w','n'): 'cavalo_branco.png',
-            ('b','n'): 'cavalo_preto.png',
-            ('w','b'): 'bispo_branco.png',
-            ('b','b'): 'bispo_preto.png',
-            ('w','q'): 'dama_branca.png',
-            ('b','q'): 'dama_preta.png',
-            ('w','k'): 'rei_branco.png',
-            ('b','k'): 'rei_preto.png'
-        }
         
         self.cor: str    = cor.lower()
         self.tipo: str   = tipo.lower()
@@ -63,7 +63,7 @@ class Peca:
         Args:
             dimensoes_sprite (tuple[int, int]): Dimensões do sprite (largura, altura).
         """
-        caminho = self.mapa[(str(self.cor), str(self.tipo))]
+        caminho = self.MAPA_IMG[(str(self.cor), str(self.tipo))]
         self.imagem_original = pg.image.load(join('img', caminho)).convert_alpha()
         self.sprite = pg.transform.scale(self.imagem_original, dimensoes_sprite)
     
