@@ -194,40 +194,131 @@ class Tabuleiro:
         return self.movimentos_possiveis
 
 
-    def handle_drag_n_drop(self, event) -> None:
+    def handle_drag_n_drop(self, event: pg.Event) -> None:
         """
         Trata os eventos de arrastar e soltar.
-
-        Args:
-            event (pygame.event.Event): Evento do Pygame.
         """
-        click = event.type == pg.MOUSEBUTTONDOWN and event.button == 1
-        if click: # click com o botao esquerdo
-            self.peca_selecionada = None
-            self.origem_lc = None
-            for li in range(8):
-                for co in range(8):
-                    p: Peca = self.matriz[li, co]
-                    if p is not None and p.rect.collidepoint(event.pos):
-                        self.peca_selecionada = p
-                        self.origem_lc = (li, co)
-                        self.click = True
-                        self.drag_offset = vetor(event.pos) - vetor(p.rect.topleft)
+        if self._is_left_click(event):
+            self._handle_click(event)
 
-                        if self.flag_gerar_movimentos:
-                            self.gerar_mov_peca(p)
-                        return
+        elif self._is_dragging(event):
+            self._handle_drag(event)
 
-        elif event.type == pg.MOUSEMOTION and self.click and self.peca_selecionada is not None:
-            novo_topleft = vetor(event.pos) - self.drag_offset
-            self.peca_selecionada.rect.topleft = (int(novo_topleft.x), int(novo_topleft.y))
+        elif self._is_release(event):
+            self._handle_release()
 
-        elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
-            if self.peca_selecionada is not None:
-                self.soltar_peca(self.peca_selecionada)
-            self.click = False
-            self.peca_selecionada = None
-            self.origem_lc = None
+
+    def _is_left_click(self, event: pg.Event) -> bool:
+        """
+        Verifica se o tipo do evento é o botão esquerdo do mouse foi clicado.
+        
+        args:
+            event (pg.Event): Evento do Pygame.
+        
+        returns:
+            bool: True se o botão esquerdo do mouse foi clicado, False caso contrário.
+        """
+        return event.type == pg.MOUSEBUTTONDOWN and event.button == 1
+
+
+    def _is_dragging(self, event: pg.Event) -> bool:
+        """
+        Verifica se o mouse está sendo arrastado.
+        
+        args:
+            event (pg.Event): Evento do Pygame.
+        
+        returns:
+            bool: True se o mouse estiver sendo arrastado, False caso contrário.
+        """
+        return (
+            event.type == pg.MOUSEMOTION and
+            self.click and
+            self.peca_selecionada is not None
+        )
+
+
+    def _is_release(self, event: pg.Event) -> bool:
+        """
+        Verifica se o botão esquerdo do mouse foi solto.
+        
+        args:
+            event (pg.Event): Evento do Pygame.
+        
+        returns:
+            bool: True se o botão esquerdo do mouse foi solto, False caso contrário.
+        """
+        return event.type == pg.MOUSEBUTTONUP and event.button == 1
+
+
+    def _handle_click(self, event: pg.Event) -> None:
+        """
+        Trata o clique do mouse.
+        
+        args:
+            event (pg.Event): Evento do Pygame.
+        """
+        self.click = False
+        self.peca_selecionada = None
+        self.origem_lc = None
+
+        for li in range(8):
+            for co in range(8):
+                p = self.matriz[li, co]
+
+                if p is not None and p.rect.collidepoint(event.pos):
+                    self._selecionar_peca(p, li, co, event.pos)
+                    return
+
+
+    def _selecionar_peca(self, peca: Peca, li: int, co: int, mouse_pos: tuple[int, int]) -> None:
+        """
+        Seleciona a peça clicada.
+        
+        args:
+            peca (Peca): Peça selecionada.
+            li (int): Linha da peça.
+            co (int): Coluna da peça.
+            mouse_pos (tuple[int, int]): Posição do mouse.
+        """
+        self.peca_selecionada = peca
+        self.origem_lc = (li, co)
+        self.click = True
+
+        self.drag_offset = vetor(mouse_pos) - vetor(peca.rect.topleft)
+
+        if self.flag_gerar_movimentos:
+            self.gerar_mov_peca(peca)
+
+
+    def _handle_drag(self, event: pg.Event) -> None:
+        """
+        Trata o arrastar da peça.
+        
+        args:
+            event (pg.Event): Evento do Pygame.
+        """
+        novo_topleft = vetor(event.pos) - self.drag_offset
+        self.peca_selecionada.rect.topleft = (
+            int(novo_topleft.x),
+            int(novo_topleft.y)
+        )
+
+
+    def _handle_release(self) -> None:
+        if self.peca_selecionada is not None:
+            self.soltar_peca(self.peca_selecionada)
+
+        self._reset_drag_state()
+
+
+    def _reset_drag_state(self) -> None:
+        """
+        Reseta o estado do arrastar.
+        """
+        self.click = False
+        self.peca_selecionada = None
+        self.origem_lc = None
 
 
     def soltar_peca(self, peca: Peca) -> None:
@@ -288,10 +379,6 @@ class Tabuleiro:
                 x += TAM_CASA
             y += TAM_CASA
         return l
-
-
-    def validar_movimento(self):
-        pass
 
 
     def desenhar(self, surf: pg.Surface) -> None:
