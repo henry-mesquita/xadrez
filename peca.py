@@ -2,6 +2,13 @@ import pygame as pg
 from os.path import join
 from pygame import Vector2 as vetor
 import numpy as np
+from enum import Enum
+
+
+class TipoMov(Enum):
+    NORMAL = 0
+    CAPTURA = 1
+
 
 class Peca:
     MAPA_IMG = {
@@ -117,7 +124,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov = []
+        mov: list[tuple[tuple[int, int], TipoMov]] = []
 
         direcoes = ((-1, -1), (-1, 1), (1, -1), (1, 1))
 
@@ -130,9 +137,16 @@ class Peca:
 
                 if not (0 <= l < 8 and 0 <= c < 8):
                     break
+                
+                destino = matriz[l, c]
 
-                mov.append((l, c))
-        
+                if destino is None:
+                    mov.append(((l, c), TipoMov.NORMAL))
+                else:
+                    if destino.cor != self.cor:
+                        mov.append(((l, c), TipoMov.CAPTURA))
+                    break
+
         return mov
 
 
@@ -147,7 +161,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov = []
+        mov: list[tuple[tuple[int, int], TipoMov]] = []
 
         direcoes = ((0, 1), (0, -1), (1, 0), (-1, 0))
 
@@ -161,7 +175,14 @@ class Peca:
                 if not (0 <= l < 8 and 0 <= c < 8):
                     break
 
-                mov.append((l, c))
+                destino = matriz[l, c]
+
+                if destino is None:
+                    mov.append(((l, c), TipoMov.NORMAL))
+                else:
+                    if destino.cor != self.cor:
+                        mov.append(((l, c), TipoMov.CAPTURA))
+                    break
         
         return mov
 
@@ -191,13 +212,17 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-
-        mov = []
+        mov: list[tuple[tuple[int, int], TipoMov]] = []
 
         if self.cor == 'w': # se cor for branco
             
             offsets_peao = [
                 (-1, 0)
+            ]
+
+            offsets_captura_peao = [
+                (-1, -1),
+                (-1, 1)
             ]
 
             if lc[0] == 6:
@@ -207,14 +232,28 @@ class Peca:
                 (1, 0)
             ]
 
+            offsets_captura_peao = [
+                (1, -1),
+                (1, 1)
+            ]
+
             if lc[0] == 1:
                 offsets_peao.append((2, 0))
 
         
         for offset in offsets_peao:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
+            pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
+            if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8) and pos_matriz_destino is None:
+                mov.append((casa_destino, TipoMov.NORMAL))
+        
+        for offset_captura in offsets_captura_peao:
+            casa_destino = (lc[0] + offset_captura[0], lc[1] + offset_captura[1])
             if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
-                mov.append(casa_destino)
+                pos_matriz_destino = matriz[lc[0] + offset_captura[0], lc[1] + offset_captura[1]]
+                if pos_matriz_destino is not None:
+                    if pos_matriz_destino.cor != self.cor:
+                        mov.append((casa_destino, TipoMov.CAPTURA))
 
         return mov
 
@@ -230,7 +269,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov = []
+        mov: list[tuple[tuple[int, int], TipoMov]] = []
 
         offsets_cavalo = [
             (-2, -1),
@@ -246,7 +285,13 @@ class Peca:
         for offset in offsets_cavalo:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
             if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
-                mov.append(casa_destino)
+                pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
+                if pos_matriz_destino is not None:
+                    if pos_matriz_destino.cor != self.cor:
+                        mov.append((casa_destino, TipoMov.CAPTURA))
+                else:
+                    mov.append((casa_destino, TipoMov.NORMAL))
+                        
 
         return mov
 
@@ -262,8 +307,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-
-        mov = []
+        mov: list[tuple[tuple[int, int], TipoMov]] = []
 
         offsets_rei = [
             (0, 1),
@@ -279,6 +323,11 @@ class Peca:
         for offset in offsets_rei:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
             if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
-                mov.append(casa_destino)
+                pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
+                if pos_matriz_destino is not None:
+                    if pos_matriz_destino.cor != self.cor:
+                        mov.append((casa_destino, TipoMov.CAPTURA))
+                else:
+                    mov.append((casa_destino, TipoMov.NORMAL))
 
         return mov

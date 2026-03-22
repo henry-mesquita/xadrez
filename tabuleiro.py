@@ -1,6 +1,6 @@
 from constantes import *
 import pygame as pg
-from peca import Peca
+from peca import Peca, TipoMov
 from pygame import Vector2 as vetor
 from dataclasses import dataclass
 import numpy as np
@@ -408,23 +408,31 @@ class Tabuleiro:
                     )
                 )
 
-                if flag_movimento:
-                    pg.draw.rect(
-                        surf,
-                        COR_CASAS_MOV,
-                        pg.Rect(
-                            coluna * TAM_CASA,
-                            linha * TAM_CASA,
-                            TAM_CASA,
-                            TAM_CASA
-                        ),
-                        width=1
-                    )
-
         for linha in self.matriz:
             for peca in linha:
                 if peca not in (None, self.peca_selecionada):
                     peca.desenhar_sprite(surf)
 
+        self.desenhar_mov_highlights(surf)
+
         if self.peca_selecionada is not None:
             self.peca_selecionada.desenhar_sprite(surf)
+
+
+    def desenhar_mov_highlights(self, surf: pg.Surface) -> None:
+        for (linha, coluna), tipo in self.movimentos_possiveis:
+            if tipo == TipoMov.CAPTURA:
+                cor = COR_CASAS_CAPTURA
+            else:
+                cor = COR_CASAS_MOV
+
+            pg.draw.circle(
+                surf,
+                cor,
+                center=(
+                    coluna * TAM_CASA + TAM_CASA // 2,
+                    linha * TAM_CASA + TAM_CASA // 2
+                ),
+                radius=RAIO_CIRCULO,
+                width=0
+            )
