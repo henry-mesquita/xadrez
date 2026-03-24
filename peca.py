@@ -124,6 +124,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
+        # TODO: verificar cravada (ideia: sair do rei em todas as direções procurando por peças)
         mov: list[tuple[tuple[int, int], TipoMov]] = []
 
         direcoes = ((-1, -1), (-1, 1), (1, -1), (1, 1))

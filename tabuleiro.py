@@ -30,6 +30,10 @@ class Tabuleiro:
         self.movimentos_possiveis: list[tuple[int, int]] = [] # Movimentos já gerados ao clicar na peça
 
         self.carregar_posicao_fen(fen=FEN_INICIAL)
+        self.turno = 'w' # w = branco | b = preto
+
+    def mudar_turno(self) -> None:
+        self.turno = 'b' if self.turno == 'w' else 'w'
 
 
     # def carregar_posicao_inicial(self) -> None:
@@ -198,6 +202,9 @@ class Tabuleiro:
         """
         Trata os eventos de arrastar e soltar.
         """
+
+        matriz_antiga = self.matriz.copy()
+
         if self._is_left_click(event):
             self._handle_click(event)
 
@@ -206,6 +213,9 @@ class Tabuleiro:
 
         elif self._is_release(event):
             self._handle_release()
+        
+        if not np.array_equal(self.matriz, matriz_antiga):
+            self.mudar_turno()
 
 
     def _is_left_click(self, event: pg.Event) -> bool:
@@ -262,11 +272,16 @@ class Tabuleiro:
         self.peca_selecionada = None
         self.origem_lc = None
 
+        self.flag_gerar_movimentos = True
+        self.movimentos_possiveis = []
+
         for li in range(8):
             for co in range(8):
-                p = self.matriz[li, co]
+                p: Peca = self.matriz[li, co]
 
                 if p is not None and p.rect.collidepoint(event.pos):
+                    if p.cor != self.turno:
+                        return
                     self._selecionar_peca(p, li, co, event.pos)
                     return
 
@@ -328,6 +343,7 @@ class Tabuleiro:
         Args:
             peca (Peca): Peça a ser solta.
         """
+        # origem
         if self.origem_lc is None:
             origem = vetor(peca.rect.topleft)
             casa_mais_proxima = min(self.posicao_topleft_casas, key=lambda c: c.distance_to(origem))
@@ -336,29 +352,51 @@ class Tabuleiro:
         else:
             li0, co0 = self.origem_lc
 
+        # alvo
         mx, my = pg.mouse.get_pos()
         alvo_li = my // TAM_CASA
         alvo_co = mx // TAM_CASA
 
+        # alvo fora do tabuleiro
         if not self.lc_valido(alvo_li, alvo_co):
             idx0 = li0 * 8 + co0
             pos0 = self.posicao_topleft_casas[idx0]
             peca.rect.topleft = (int(pos0.x), int(pos0.y))
             return
 
+        # valida movimento
+        movimentos_possiveis = []
+        for casa, _ in self.movimentos_possiveis:
+            movimentos_possiveis.append(casa)
+        
+        
+        mov_valido = (alvo_li, alvo_co) in movimentos_possiveis
+
+        if not mov_valido:
+            idx0 = li0 * 8 + co0
+            pos0 = self.posicao_topleft_casas[idx0]
+            peca.rect.topleft = (int(pos0.x), int(pos0.y))
+            return
+
+        # =========================
+        # movimento válido
+        # =========================
+
         # captura
         ocupante = self.matriz[alvo_li, alvo_co]
         if ocupante is not None and ocupante is not peca:
-            self.matriz[alvo_li][alvo_co] = None
+            self.matriz[alvo_li, alvo_co] = None
 
-        # atualização casa inicial e casa alvo
+        # move a peça
         self.matriz[li0, co0] = None
         self.matriz[alvo_li, alvo_co] = peca
 
+        # atualiza posição visual
         idx = alvo_li * 8 + alvo_co
         pos = self.posicao_topleft_casas[idx]
         peca.rect.topleft = (int(pos.x), int(pos.y))
 
+        # limpa estados
         self.movimentos_possiveis = []
         self.flag_gerar_movimentos = True
 
@@ -391,11 +429,6 @@ class Tabuleiro:
         for linha in range(8):
             for coluna in range(8):
                 cor = COR_CASAS_PARES if (linha + coluna) % 2 == 0 else COR_CASAS_IMPARES
-
-                flag_movimento = False
-                if self.peca_selecionada is not None:
-                    if (linha, coluna) in self.movimentos_possiveis:
-                        flag_movimento = True
 
                 pg.draw.rect(
                     surf,
