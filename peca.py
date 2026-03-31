@@ -4,6 +4,7 @@ from pygame import Vector2 as vetor
 import numpy as np
 from enum import Enum
 
+# POSSO USAR DEEPCOPY PRA CLONAR MATRIZ
 
 class TipoMov(Enum):
     NORMAL = 0

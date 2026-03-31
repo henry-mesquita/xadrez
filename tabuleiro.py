@@ -194,7 +194,7 @@ class Tabuleiro:
         """
         self.flag_gerar_movimentos = False
         self.movimentos_possiveis = p.gerar_movimentos_possiveis(self.matriz, lc=self.achar_lc_peca(p))
-        print(self.movimentos_possiveis)
+        # print(self.movimentos_possiveis)
         return self.movimentos_possiveis
 
 
@@ -399,6 +399,87 @@ class Tabuleiro:
         # limpa estados
         self.movimentos_possiveis = []
         self.flag_gerar_movimentos = True
+
+        xeque_branco = self.verificar_xeque('w') # branco
+        xeque_preto = self.verificar_xeque('b') # preto
+
+        print(f'Rei branco em xeque: {xeque_branco}')
+        print(f'Rei preto em xeque: {xeque_preto}')
+
+
+    def achar_lc_rei(self, cor: str) -> tuple[int, int] | None:
+        """
+        Encontra a linha e coluna do rei na matriz baseado na cor passada por parâmetro.
+
+        Args:
+            cor (str): Cor do rei.
+
+        Returns:
+            tuple[int, int] | None: Linha e coluna do rei, ou None se o rei nao for encontrado.
+        """
+        cor = cor.lower()
+        if cor not in ('b', 'w'):
+            raise ValueError('Cor precisa ser "w" ou "b"')
+
+        for li in range(8):
+            for co in range(8):
+                p = self.matriz[li, co]
+                if p is not None and p.tipo == 'k' and p.cor == cor:
+                    return (li, co)
+        return None
+
+    
+    def verificar_xeque(self, cor: str) -> bool:
+        cor = cor.lower()
+        if cor not in ('b', 'w'):
+            raise ValueError('Cor precisa ser "w" ou "b"')
+        
+        lc_rei = self.achar_lc_rei(cor)
+        if lc_rei is None:
+            return False
+
+        # torre e dama (horizontais)
+        direcoes_horizontais = ((0, 1), (0, -1), (1, 0), (-1, 0))
+        for direcao in direcoes_horizontais:
+            l = lc_rei[0]
+            c = lc_rei[1]
+            while True:
+                l += direcao[0]
+                c += direcao[1]
+
+                if not (0 <= l < 8 and 0 <= c < 8):
+                    break
+
+                destino = self.matriz[l, c]
+
+                if destino is None:
+                    continue
+
+                if destino.cor != cor and destino.tipo in ('r', 'q'):
+                    return True
+                break
+
+        # bispo e dama (diagonais)
+        direcoes_diagonais = ((-1, -1), (-1, 1), (1, -1), (1, 1))
+        for direcao in direcoes_diagonais:
+            l = lc_rei[0]
+            c = lc_rei[1]
+            while True:
+                l += direcao[0]
+                c += direcao[1]
+
+                if not (0 <= l < 8 and 0 <= c < 8):
+                    break
+
+                destino = self.matriz[l, c]
+
+                if destino is None:
+                    continue
+
+                if destino.cor != cor and destino.tipo in ('b', 'q'):
+                    return True
+                break
+        return False
 
 
     def calcular_pos_casas(self) -> list[vetor]:
