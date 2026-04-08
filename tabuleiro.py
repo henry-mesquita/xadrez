@@ -440,9 +440,11 @@ class Tabuleiro:
                 l += direcao[0]
                 c += direcao[1]
 
-                if not (0 <= l < 8 and 0 <= c < 8):
-                    break
+                dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
 
+                if not dentro_tabuleiro:
+                    break
+                
                 destino = self.matriz[l, c]
 
                 if destino is None:
@@ -461,9 +463,11 @@ class Tabuleiro:
                 l += direcao[0]
                 c += direcao[1]
 
-                if not (0 <= l < 8 and 0 <= c < 8):
-                    break
+                dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
 
+                if not dentro_tabuleiro:
+                    break
+                
                 destino = self.matriz[l, c]
 
                 if destino is None:
@@ -492,13 +496,81 @@ class Tabuleiro:
             l += offset[0]
             c += offset[1]
 
-            if not (0 <= l < 8 and 0 <= c < 8):
+            dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
+
+            if not dentro_tabuleiro:
+                continue
+            
+            destino = self.matriz[l, c]
+
+            if destino is None:
                 continue
 
+            if destino.tipo == 'n' and destino.cor != cor:
+                return True
+        
+        # rei
+        offsets_rei = [
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1),
+            (0, -1),
+            (0, 1)
+        ]
+        for offset in offsets_rei:
+            l = lc_rei[0]
+            c = lc_rei[1]
+
+            l += offset[0]
+            c += offset[1]
+
+            dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
+
+            if not dentro_tabuleiro:
+                continue
+            
             destino = self.matriz[l, c]
-            if destino is not None:
-                if destino.tipo == 'n' and destino.cor != cor:
-                    return True
+
+            if destino is None:
+                continue
+            
+            if destino.tipo == 'k' and destino.cor != cor:
+                return True
+        
+        # peão
+        if cor == 'w':
+            offsets_peao = [
+                (-1, -1),
+                (-1, 1)
+            ]
+        elif cor == 'b':
+            offsets_peao = [
+                (1, -1),
+                (1, 1)
+            ]
+        
+        for offset in offsets_peao:
+            l = lc_rei[0]
+            c = lc_rei[1]
+
+            l += offset[0]
+            c += offset[1]
+
+            dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
+
+            if not dentro_tabuleiro:
+                continue
+            
+            destino = self.matriz[l, c]
+
+            if destino is None:
+                continue
+            
+            if destino.tipo == 'p' and destino.cor != cor:
+                return True
         return False
 
 
