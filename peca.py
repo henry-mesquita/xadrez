@@ -86,7 +86,7 @@ class Peca:
         tela.blit(self.sprite, self.rect)
     
 
-    def gerar_movimentos_possiveis(self, matriz: np.ndarray, lc: tuple[int, int]) -> list:
+    def gerar_movimentos_possiveis(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis para a peça selecionada de acordo com o tipo dela.
 
@@ -114,7 +114,7 @@ class Peca:
         return []
 
 
-    def gerar_mov_bispo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list:
+    def gerar_mov_bispo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja o bispo (b).
 
@@ -125,7 +125,6 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        # TODO: verificar cravada (ideia: sair do rei em todas as direções procurando por peças)
         mov: list[tuple[tuple[int, int], TipoMov]] = []
 
         direcoes = ((-1, -1), (-1, 1), (1, -1), (1, 1))
@@ -152,7 +151,7 @@ class Peca:
         return mov
 
 
-    def gerar_mov_torre(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_mov_torre(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja a torre (r).
 
@@ -189,7 +188,7 @@ class Peca:
         return mov
 
 
-    def gerar_mov_dama(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_mov_dama(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja a dama (q).
 
@@ -203,7 +202,7 @@ class Peca:
         return self.gerar_mov_bispo(matriz, lc) + self.gerar_mov_torre(matriz, lc)
 
 
-    def gerar_mov_peao(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_mov_peao(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja o peão (p).
 
@@ -260,7 +259,7 @@ class Peca:
         return mov
 
     
-    def gerar_mov_cavalo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_mov_cavalo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja o cavalo (n).
 
@@ -298,7 +297,7 @@ class Peca:
         return mov
 
 
-    def gerar_mov_rei(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_mov_rei(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja o rei (k).
 

@@ -2,14 +2,7 @@ from constantes import *
 import pygame as pg
 from peca import Peca, TipoMov
 from pygame import Vector2 as vetor
-from dataclasses import dataclass
 import numpy as np
-
-
-@dataclass
-class Lance: # Não está sendo utilizada ainda
-    casa_inicial: tuple[int, int]
-    casa_final: tuple[int, int]
 
 
 class Tabuleiro:
@@ -182,7 +175,7 @@ class Tabuleiro:
                     return (li, co)
     
 
-    def gerar_mov_peca(self, p: Peca) -> None | list[tuple[int, int]]:
+    def gerar_mov_peca(self, p: Peca) -> None | list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis para a peça selecionada.
 
@@ -479,6 +472,33 @@ class Tabuleiro:
                 if destino.cor != cor and destino.tipo in ('b', 'q'):
                     return True
                 break
+
+        # cavalo
+        offsets_cavalo = [
+            (-2, -1),
+            (-2, 1),
+            (-1, -2),
+            (-1, 2),
+            (2, -1),
+            (2, 1),
+            (1, -2),
+            (1, 2)
+        ]
+
+        for offset in offsets_cavalo:
+            l = lc_rei[0]
+            c = lc_rei[1]
+
+            l += offset[0]
+            c += offset[1]
+
+            if not (0 <= l < 8 and 0 <= c < 8):
+                continue
+
+            destino = self.matriz[l, c]
+            if destino is not None:
+                if destino.tipo == 'n' and destino.cor != cor:
+                    return True
         return False
 
 

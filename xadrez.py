@@ -2,9 +2,7 @@ import pygame as pg
 from tabuleiro import Tabuleiro
 from constantes import *
 from os.path import join
-from pygame import Surface, Clock, Vector2 as vetor
-
-# TODO: IMPLEMENTAR CAPTURA
+from pygame import Surface, Clock
 
 class Xadrez:
     def __init__(self) -> None:
