@@ -29,70 +29,6 @@ class Tabuleiro:
         self.turno = 'b' if self.turno == 'w' else 'w'
 
 
-    # def carregar_posicao_inicial(self) -> None:
-    #     """
-    #     Carrega a posição inicial do tabuleiro de forma arcaica.
-    #     (Função feita apenas para testar a atribuição na matriz)
-    #     """
-    #     self.matriz[0][0] = Peca('b', 'r', TAMANHO_PECA, self.posicao_topleft_casas[0])
-    #     self.matriz[0][1] = Peca('b', 'n', TAMANHO_PECA, self.posicao_topleft_casas[1])
-    #     self.matriz[0][2] = Peca('b', 'b', TAMANHO_PECA, self.posicao_topleft_casas[2])
-    #     self.matriz[0][3] = Peca('b', 'q', TAMANHO_PECA, self.posicao_topleft_casas[3])
-    #     self.matriz[0][4] = Peca('b', 'k', TAMANHO_PECA, self.posicao_topleft_casas[4])
-    #     self.matriz[0][5] = Peca('b', 'b', TAMANHO_PECA, self.posicao_topleft_casas[5])
-    #     self.matriz[0][6] = Peca('b', 'n', TAMANHO_PECA, self.posicao_topleft_casas[6])
-    #     self.matriz[0][7] = Peca('b', 'r', TAMANHO_PECA, self.posicao_topleft_casas[7])
-
-    #     self.matriz[1][0] = Peca('b', 'p', TAMANHO_PECA, self.posicao_topleft_casas[8])
-    #     self.matriz[1][1] = Peca('b', 'p', TAMANHO_PECA, self.posicao_topleft_casas[9])
-    #     self.matriz[1][2] = Peca('b', 'p', TAMANHO_PECA, self.posicao_topleft_casas[10])
-    #     self.matriz[1][3] = Peca('b', 'p', TAMANHO_PECA, self.posicao_topleft_casas[11])
-    #     self.matriz[1][4] = Peca('b', 'p', TAMANHO_PECA, self.posicao_topleft_casas[12])
-    #     self.matriz[1][5] = Peca('b', 'p', TAMANHO_PECA, self.posicao_topleft_casas[13])
-    #     self.matriz[1][6] = Peca('b', 'p', TAMANHO_PECA, self.posicao_topleft_casas[14])
-    #     self.matriz[1][7] = Peca('b', 'p', TAMANHO_PECA, self.posicao_topleft_casas[15])
-        
-    #     self.matriz[6][0] = Peca('w', 'p', TAMANHO_PECA, self.posicao_topleft_casas[48])
-    #     self.matriz[6][1] = Peca('w', 'p', TAMANHO_PECA, self.posicao_topleft_casas[49])
-    #     self.matriz[6][2] = Peca('w', 'p', TAMANHO_PECA, self.posicao_topleft_casas[50])
-    #     self.matriz[6][3] = Peca('w', 'p', TAMANHO_PECA, self.posicao_topleft_casas[51])
-    #     self.matriz[6][4] = Peca('w', 'p', TAMANHO_PECA, self.posicao_topleft_casas[52])
-    #     self.matriz[6][5] = Peca('w', 'p', TAMANHO_PECA, self.posicao_topleft_casas[53])
-    #     self.matriz[6][6] = Peca('w', 'p', TAMANHO_PECA, self.posicao_topleft_casas[54])
-    #     self.matriz[6][7] = Peca('w', 'p', TAMANHO_PECA, self.posicao_topleft_casas[55])
-
-    #     self.matriz[7][0] = Peca('w', 'r', TAMANHO_PECA, self.posicao_topleft_casas[56])
-    #     self.matriz[7][1] = Peca('w', 'n', TAMANHO_PECA, self.posicao_topleft_casas[57])
-    #     self.matriz[7][2] = Peca('w', 'b', TAMANHO_PECA, self.posicao_topleft_casas[58])
-    #     self.matriz[7][3] = Peca('w', 'q', TAMANHO_PECA, self.posicao_topleft_casas[59])
-    #     self.matriz[7][4] = Peca('w', 'k', TAMANHO_PECA, self.posicao_topleft_casas[60])
-    #     self.matriz[7][5] = Peca('w', 'b', TAMANHO_PECA, self.posicao_topleft_casas[61])
-    #     self.matriz[7][6] = Peca('w', 'n', TAMANHO_PECA, self.posicao_topleft_casas[62])
-    #     self.matriz[7][7] = Peca('w', 'r', TAMANHO_PECA, self.posicao_topleft_casas[63])
-
-
-    # @staticmethod
-    # def indice_para_lc(idx: int) -> tuple[int, int]:
-    #     """
-    #     Converte o indice da matriz para linha e coluna.
-
-    #     Returns:
-    #         tuple[int, int]: linha e coluna
-    #     """
-    #     return int(idx // 8, idx % 8)
-
-
-    # @staticmethod
-    # def lc_para_indice(linha: int, coluna: int) -> int:
-    #     """
-    #     Converte linha e coluna para o indice da matriz.
-
-    #     Returns:
-    #         int: Indice da matriz
-    #     """
-    #     return int(linha * 8 + coluna)
-
-
     @staticmethod
     def posicao_para_lc(topleft: tuple[int, int]) -> tuple[int, int]:
         """
@@ -440,9 +376,7 @@ class Tabuleiro:
                 l += direcao[0]
                 c += direcao[1]
 
-                dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
-
-                if not dentro_tabuleiro:
+                if not self.lc_valido(l, c):
                     break
                 
                 destino = self.matriz[l, c]
@@ -463,9 +397,7 @@ class Tabuleiro:
                 l += direcao[0]
                 c += direcao[1]
 
-                dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
-
-                if not dentro_tabuleiro:
+                if not self.lc_valido(l, c):
                     break
                 
                 destino = self.matriz[l, c]
@@ -496,9 +428,7 @@ class Tabuleiro:
             l += offset[0]
             c += offset[1]
 
-            dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
-
-            if not dentro_tabuleiro:
+            if not self.lc_valido(l, c):
                 continue
             
             destino = self.matriz[l, c]
@@ -527,9 +457,7 @@ class Tabuleiro:
             l += offset[0]
             c += offset[1]
 
-            dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
-
-            if not dentro_tabuleiro:
+            if not self.lc_valido(l, c):
                 continue
             
             destino = self.matriz[l, c]
@@ -559,9 +487,7 @@ class Tabuleiro:
             l += offset[0]
             c += offset[1]
 
-            dentro_tabuleiro = (0 <= l < 8 and 0 <= c < 8)
-
-            if not dentro_tabuleiro:
+            if not self.lc_valido(l, c):
                 continue
             
             destino = self.matriz[l, c]

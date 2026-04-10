@@ -62,6 +62,17 @@ class Peca:
 
     def __repr__(self) -> str:
         return f"Peca({self.tipo}, {self.cor})"
+    
+
+    @staticmethod
+    def lc_valido(linha: int, coluna: int) -> bool:
+        """
+        Verifica se a linha e coluna são válidas.
+
+        Returns:
+            bool: True se a linha e coluna forem validas, False caso contrário.
+        """
+        return 0 <= linha < 8 and 0 <= coluna < 8
 
 
     def inicializar_sprite(self, dimensoes_sprite: tuple[int, int]) -> None:
@@ -136,7 +147,7 @@ class Peca:
                 l += direcao[0]
                 c += direcao[1]
 
-                if not (0 <= l < 8 and 0 <= c < 8):
+                if not self.lc_valido(l, c):
                     break
                 
                 destino = matriz[l, c]
@@ -173,7 +184,7 @@ class Peca:
                 l += direcao[0]
                 c += direcao[1]
 
-                if not (0 <= l < 8 and 0 <= c < 8):
+                if not self.lc_valido(l, c):
                     break
 
                 destino = matriz[l, c]
@@ -245,13 +256,16 @@ class Peca:
         for offset in offsets_peao:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
             pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
-            if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8) and pos_matriz_destino is None:
+
+            if self.lc_valido(casa_destino[0], casa_destino[1]) and pos_matriz_destino is None:
                 mov.append((casa_destino, TipoMov.NORMAL))
         
         for offset_captura in offsets_captura_peao:
             casa_destino = (lc[0] + offset_captura[0], lc[1] + offset_captura[1])
-            if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
-                pos_matriz_destino = matriz[lc[0] + offset_captura[0], lc[1] + offset_captura[1]]
+
+            if self.lc_valido(casa_destino[0], casa_destino[1]):
+                pos_matriz_destino = matriz[lc[0] + offset_captura[0],
+                                            lc[1] + offset_captura[1]]
                 if pos_matriz_destino is not None:
                     if pos_matriz_destino.cor != self.cor:
                         mov.append((casa_destino, TipoMov.CAPTURA))
@@ -285,7 +299,7 @@ class Peca:
 
         for offset in offsets_cavalo:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
-            if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
+            if self.lc_valido(casa_destino[0], casa_destino[1]):
                 pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
                 if pos_matriz_destino is not None:
                     if pos_matriz_destino.cor != self.cor:
@@ -323,7 +337,7 @@ class Peca:
 
         for offset in offsets_rei:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
-            if (0 <= casa_destino[0] < 8 and 0 <= casa_destino[1] < 8):
+            if self.lc_valido(casa_destino[0], casa_destino[1]):
                 pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
                 if pos_matriz_destino is not None:
                     if pos_matriz_destino.cor != self.cor:
