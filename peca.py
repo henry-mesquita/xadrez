@@ -99,9 +99,9 @@ class Peca:
         tela.blit(self.sprite, self.rect)
     
 
-    def gerar_movimentos_possiveis(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
-        Gera os movimentos possíveis para a peça selecionada de acordo com o tipo dela.
+        Gera os movimentos pseudo legais para a peça selecionada de acordo com o tipo dela.
 
         Args:
             matriz (np.ndarray): Matriz do tabuleiro.
@@ -112,24 +112,24 @@ class Peca:
         """
         match self.tipo:
             case 'b': # bispo
-                return self.gerar_mov_bispo(matriz, lc)
+                return self._gerar_mov_bispo(lc)
             case 'r': # torre
-                return self.gerar_mov_torre(matriz, lc)
+                return self._gerar_mov_torre(lc)
             case 'q': # dama
-                return self.gerar_mov_dama(matriz, lc)
+                return self._gerar_mov_dama(lc)
             case 'p': # peão
-                return self.gerar_mov_peao(matriz, lc)
+                return self._gerar_mov_peao(lc)
             case 'n': # cavalo
-                return self.gerar_mov_cavalo(matriz, lc)
+                return self._gerar_mov_cavalo(lc)
             case 'k': # rei
-                return self.gerar_mov_rei(matriz, lc)
+                return self._gerar_mov_rei(lc)
 
         return []
 
 
-    def gerar_mov_bispo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def _gerar_mov_bispo(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
-        Gera os movimentos possíveis caso o tipo da peça seja o bispo (b).
+        Gera os movimentos pseudo legais caso o tipo da peça seja o bispo (b).
 
         Args:
             matriz (np.ndarray): Matriz do tabuleiro.
@@ -156,9 +156,9 @@ class Peca:
         return mov
 
 
-    def gerar_mov_torre(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def _gerar_mov_torre(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
-        Gera os movimentos possíveis caso o tipo da peça seja a torre (r).
+        Gera os movimentos pseudo legais caso o tipo da peça seja a torre (r).
 
         Args:
             matriz (np.ndarray): Matriz do tabuleiro.
@@ -185,9 +185,9 @@ class Peca:
         return mov
 
 
-    def gerar_mov_dama(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def _gerar_mov_dama(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
-        Gera os movimentos possíveis caso o tipo da peça seja a dama (q).
+        Gera os movimentos pseudo legais caso o tipo da peça seja a dama (q).
 
         Args:
             matriz (np.ndarray): Matriz do tabuleiro.
@@ -196,12 +196,12 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        return self.gerar_mov_bispo(matriz, lc) + self.gerar_mov_torre(matriz, lc)
+        return self._gerar_mov_bispo(lc) + self._gerar_mov_torre(lc)
 
 
-    def gerar_mov_peao(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def _gerar_mov_peao(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
-        Gera os movimentos possíveis caso o tipo da peça seja o peão (p).
+        Gera os movimentos pseudo legais caso o tipo da peça seja o peão (p).
 
         Args:
             matriz (np.ndarray): Matriz do tabuleiro.
@@ -252,9 +252,9 @@ class Peca:
         return mov
 
     
-    def gerar_mov_cavalo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def _gerar_mov_cavalo(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
-        Gera os movimentos possíveis caso o tipo da peça seja o cavalo (n).
+        Gera os movimentos pseudo legais caso o tipo da peça seja o cavalo (n).
 
         Args:
             matriz (np.ndarray): Matriz do tabuleiro.
@@ -284,9 +284,9 @@ class Peca:
         return mov
 
 
-    def gerar_mov_rei(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def _gerar_mov_rei(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
-        Gera os movimentos possíveis caso o tipo da peça seja o rei (k).
+        Gera os movimentos pseudo legais caso o tipo da peça seja o rei (k).
 
         Args:
             matriz (np.ndarray): Matriz do tabuleiro.

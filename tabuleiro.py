@@ -126,9 +126,10 @@ class Tabuleiro:
         origem = self.achar_lc_peca(p)
         if origem is None:
             self.movimentos_possiveis = []
+            self.pseudo_movimentos = []
             return self.movimentos_possiveis
 
-        self.pseudo_movimentos = p.gerar_movimentos_possiveis(self.matriz, lc=origem)
+        self.pseudo_movimentos = p.gerar_pseudo_movimentos(lc=origem)
         self.movimentos_possiveis = self._classificar_movimentos(p, origem, self.pseudo_movimentos)
         return self.movimentos_possiveis
 
@@ -664,7 +665,7 @@ class Tabuleiro:
                 if peca not in (None, self.peca_selecionada):
                     peca.desenhar_sprite(surf)
 
-        self.desenhar_movimentos_possiveis(surf)
+        self.desenhar_pseudo_movimentos(surf)
 
         if self.peca_selecionada is not None:
             self.peca_selecionada.desenhar_sprite(surf)
