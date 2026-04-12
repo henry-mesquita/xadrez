@@ -20,7 +20,8 @@ class Tabuleiro:
 
         # flag pra não deixar gerar movimentos a cada frame
         self.flag_gerar_movimentos = True
-        self.movimentos_possiveis: list[tuple[int, int]] = [] # Movimentos já gerados ao clicar na peça
+        self.movimentos_possiveis: list[tuple[tuple[int, int], TipoMov]] = [] # Movimentos já gerados ao clicar na peça
+        self.pseudo_movimentos = None
 
         self.carregar_posicao_fen(fen=FEN_INICIAL)
         self.turno = 'w' # w = branco | b = preto
@@ -119,12 +120,126 @@ class Tabuleiro:
             p (Peca): Peça selecionada.
 
         Returns:
-            list[tuple[int, int]]: Lista de movimentos possíveis.
+            list[tuple[tuple[int, int], TipoMov]]: Lista de movimentos possíveis com tipo.
         """
         self.flag_gerar_movimentos = False
-        self.movimentos_possiveis = p.gerar_movimentos_possiveis(self.matriz, lc=self.achar_lc_peca(p))
-        # print(self.movimentos_possiveis)
+        origem = self.achar_lc_peca(p)
+        if origem is None:
+            self.movimentos_possiveis = []
+            return self.movimentos_possiveis
+
+        self.pseudo_movimentos = p.gerar_movimentos_possiveis(self.matriz, lc=origem)
+        self.movimentos_possiveis = self._classificar_movimentos(p, origem, self.pseudo_movimentos)
         return self.movimentos_possiveis
+
+
+    def _classificar_movimentos(
+        self,
+        peca: Peca,
+        origem: tuple[int, int],
+        movimentos: list[tuple[int, int]]
+    ) -> list[tuple[tuple[int, int], TipoMov]]:
+        """
+        Classifica movimentos pseudo-legais como normais ou de captura.
+
+        Args:
+            peca (Peca): A peça que está se movendo.
+            origem (tuple[int, int]): Casa de origem da peça.
+            movimentos (list[tuple[int, int]]): Movimentos pseudo-legais gerados pela peça.
+
+        Returns:
+            list[tuple[tuple[int, int], TipoMov]]: Movimentos válidos com tipo.
+        """
+        movs: list[tuple[tuple[int, int], TipoMov]] = []
+        for casa in movimentos:
+            tipo = self._validar_movimento(peca, origem, casa)
+            if tipo is not None:
+                movs.append((casa, tipo))
+        return movs
+
+
+    def _validar_movimento(
+        self,
+        peca: Peca,
+        origem: tuple[int, int],
+        destino_lc: tuple[int, int]
+    ) -> TipoMov | None:
+        """
+        Valida um movimento pseudo-legal e determina o tipo de movimento.
+
+        Args:
+            peca (Peca): Peça que está se movendo.
+            origem (tuple[int, int]): Casa de origem.
+            destino_lc (tuple[int, int]): Casa de destino.
+
+        Returns:
+            TipoMov | None: Tipo de movimento válido ou None se inválido.
+        """
+        destino = self.matriz[destino_lc[0], destino_lc[1]]
+
+        if peca.tipo == 'p':
+            delta = (destino_lc[0] - origem[0], destino_lc[1] - origem[1])
+            if peca.cor == 'w':
+                forward = (-1, 0)
+                double_forward = (-2, 0)
+                captures = [(-1, -1), (-1, 1)]
+            else:
+                forward = (1, 0)
+                double_forward = (2, 0)
+                captures = [(1, -1), (1, 1)]
+
+            if delta == forward:
+                return TipoMov.NORMAL if destino is None else None
+
+            if delta == double_forward:
+                meio = (origem[0] + forward[0], origem[1])
+                if destino is None and self.matriz[meio[0], meio[1]] is None:
+                    return TipoMov.NORMAL
+                return None
+
+            if delta in captures:
+                if destino is not None and destino.cor != peca.cor:
+                    return TipoMov.CAPTURA
+                return None
+
+            return None
+
+        if peca.tipo in ('b', 'r', 'q'):
+            if not self._caminho_livre(origem, destino_lc):
+                return None
+
+        if destino is not None:
+            if destino.cor == peca.cor:
+                return None
+            return TipoMov.CAPTURA
+
+        return TipoMov.NORMAL
+
+
+    def _caminho_livre(self, origem: tuple[int, int], destino: tuple[int, int]) -> bool:
+        """
+        Verifica se o caminho entre origem e destino está livre para movimentos deslizantes.
+
+        Args:
+            origem (tuple[int, int]): Casa de origem.
+            destino (tuple[int, int]): Casa de destino.
+
+        Returns:
+            bool: True se não houver peças entre origem e destino.
+        """
+        delta = (destino[0] - origem[0], destino[1] - origem[1])
+        passo_l = 0 if delta[0] == 0 else (1 if delta[0] > 0 else -1)
+        passo_c = 0 if delta[1] == 0 else (1 if delta[1] > 0 else -1)
+
+        if passo_l == 0 and passo_c == 0:
+            return False
+
+        atual = (origem[0] + passo_l, origem[1] + passo_c)
+        while atual != destino:
+            if self.matriz[atual[0], atual[1]] is not None:
+                return False
+            atual = (atual[0] + passo_l, atual[1] + passo_c)
+        return True
 
 
     def handle_drag_n_drop(self, event: pg.Event) -> None:
@@ -250,6 +365,9 @@ class Tabuleiro:
 
 
     def _handle_release(self) -> None:
+        """
+        Processa o evento de soltar o botão do mouse.
+        """
         if self.peca_selecionada is not None:
             self.soltar_peca(self.peca_selecionada)
 
@@ -326,8 +444,9 @@ class Tabuleiro:
         peca.rect.topleft = (int(pos.x), int(pos.y))
 
         # limpa estados
-        self.movimentos_possiveis = []
-        self.flag_gerar_movimentos = True
+        self.movimentos_possiveis   = []
+        self.pseudo_movimentos      = []
+        self.flag_gerar_movimentos  = True
 
         xeque_branco = self.verificar_xeque('w') # branco
         xeque_preto = self.verificar_xeque('b') # preto
@@ -545,13 +664,44 @@ class Tabuleiro:
                 if peca not in (None, self.peca_selecionada):
                     peca.desenhar_sprite(surf)
 
-        self.desenhar_mov_highlights(surf)
+        self.desenhar_movimentos_possiveis(surf)
 
         if self.peca_selecionada is not None:
             self.peca_selecionada.desenhar_sprite(surf)
 
 
-    def desenhar_mov_highlights(self, surf: pg.Surface) -> None:
+    def desenhar_pseudo_movimentos(self, surf: pg.Surface) -> None:
+        """
+        Desenha os movimentos pseudo-legais gerados pela peça.
+
+        Args:
+            surf (pg.Surface): Superfície na qual é desenhado o destaque.
+        """
+        if self.pseudo_movimentos is None:
+            return
+
+        for (linha, coluna) in self.pseudo_movimentos:
+            cor = (0, 255, 0)
+
+            pg.draw.circle(
+                surf,
+                cor,
+                center=(
+                    coluna * TAM_CASA + TAM_CASA // 2,
+                    linha * TAM_CASA + TAM_CASA // 2
+                ),
+                radius=RAIO_CIRCULO,
+                width=0
+            )
+
+
+    def desenhar_movimentos_possiveis(self, surf: pg.Surface) -> None:
+        """
+        Desenha os movimentos já validados com tipo normal ou captura.
+
+        Args:
+            surf (pg.Surface): Superfície na qual é desenhado o destaque.
+        """
         for (linha, coluna), tipo in self.movimentos_possiveis:
             if tipo == TipoMov.CAPTURA:
                 cor = COR_CASAS_CAPTURA

@@ -57,10 +57,12 @@ class Peca:
     
 
     def __str__(self) -> str:
+        """Retorna uma representação de string da peça."""
         return f'Tipo: {self.tipo} | Cor: {self.cor}'
     
 
     def __repr__(self) -> str:
+        """Retorna uma representação de depuração da peça."""
         return f"Peca({self.tipo}, {self.cor})"
     
 
@@ -97,7 +99,7 @@ class Peca:
         tela.blit(self.sprite, self.rect)
     
 
-    def gerar_movimentos_possiveis(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
+    def gerar_movimentos_possiveis(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
         Gera os movimentos possíveis para a peça selecionada de acordo com o tipo dela.
 
@@ -125,7 +127,7 @@ class Peca:
         return []
 
 
-    def gerar_mov_bispo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
+    def gerar_mov_bispo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja o bispo (b).
 
@@ -136,7 +138,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov: list[tuple[tuple[int, int], TipoMov]] = []
+        mov: list[tuple[int, int]] = []
 
         direcoes = ((-1, -1), (-1, 1), (1, -1), (1, 1))
 
@@ -149,20 +151,12 @@ class Peca:
 
                 if not self.lc_valido(l, c):
                     break
-                
-                destino = matriz[l, c]
-
-                if destino is None:
-                    mov.append(((l, c), TipoMov.NORMAL))
-                else:
-                    if destino.cor != self.cor:
-                        mov.append(((l, c), TipoMov.CAPTURA))
-                    break
+                mov.append((l, c))
 
         return mov
 
 
-    def gerar_mov_torre(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
+    def gerar_mov_torre(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja a torre (r).
 
@@ -173,7 +167,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov: list[tuple[tuple[int, int], TipoMov]] = []
+        mov: list[tuple[int, int]] = []
 
         direcoes = ((0, 1), (0, -1), (1, 0), (-1, 0))
 
@@ -186,20 +180,12 @@ class Peca:
 
                 if not self.lc_valido(l, c):
                     break
-
-                destino = matriz[l, c]
-
-                if destino is None:
-                    mov.append(((l, c), TipoMov.NORMAL))
-                else:
-                    if destino.cor != self.cor:
-                        mov.append(((l, c), TipoMov.CAPTURA))
-                    break
+                mov.append((l, c))
         
         return mov
 
 
-    def gerar_mov_dama(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
+    def gerar_mov_dama(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja a dama (q).
 
@@ -213,7 +199,7 @@ class Peca:
         return self.gerar_mov_bispo(matriz, lc) + self.gerar_mov_torre(matriz, lc)
 
 
-    def gerar_mov_peao(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
+    def gerar_mov_peao(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja o peão (p).
 
@@ -224,7 +210,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov: list[tuple[tuple[int, int], TipoMov]] = []
+        mov: list[tuple[int, int]] = []
 
         if self.cor == 'w': # se cor for branco
             
@@ -255,25 +241,18 @@ class Peca:
         
         for offset in offsets_peao:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
-            pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
-
-            if self.lc_valido(casa_destino[0], casa_destino[1]) and pos_matriz_destino is None:
-                mov.append((casa_destino, TipoMov.NORMAL))
+            if self.lc_valido(casa_destino[0], casa_destino[1]):
+                mov.append(casa_destino)
         
         for offset_captura in offsets_captura_peao:
             casa_destino = (lc[0] + offset_captura[0], lc[1] + offset_captura[1])
-
             if self.lc_valido(casa_destino[0], casa_destino[1]):
-                pos_matriz_destino = matriz[lc[0] + offset_captura[0],
-                                            lc[1] + offset_captura[1]]
-                if pos_matriz_destino is not None:
-                    if pos_matriz_destino.cor != self.cor:
-                        mov.append((casa_destino, TipoMov.CAPTURA))
+                mov.append(casa_destino)
 
         return mov
 
     
-    def gerar_mov_cavalo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
+    def gerar_mov_cavalo(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja o cavalo (n).
 
@@ -284,7 +263,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov: list[tuple[tuple[int, int], TipoMov]] = []
+        mov: list[tuple[int, int]] = []
 
         offsets_cavalo = [
             (-2, -1),
@@ -300,18 +279,12 @@ class Peca:
         for offset in offsets_cavalo:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
             if self.lc_valido(casa_destino[0], casa_destino[1]):
-                pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
-                if pos_matriz_destino is not None:
-                    if pos_matriz_destino.cor != self.cor:
-                        mov.append((casa_destino, TipoMov.CAPTURA))
-                else:
-                    mov.append((casa_destino, TipoMov.NORMAL))
-                        
+                mov.append(casa_destino)
 
         return mov
 
 
-    def gerar_mov_rei(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[tuple[int, int], TipoMov]]:
+    def gerar_mov_rei(self, matriz: np.ndarray, lc: tuple[int, int]) -> list[tuple[int, int]]:
         """
         Gera os movimentos possíveis caso o tipo da peça seja o rei (k).
 
@@ -322,7 +295,7 @@ class Peca:
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov: list[tuple[tuple[int, int], TipoMov]] = []
+        mov: list[tuple[int, int]] = []
 
         offsets_rei = [
             (0, 1),
@@ -338,11 +311,6 @@ class Peca:
         for offset in offsets_rei:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
             if self.lc_valido(casa_destino[0], casa_destino[1]):
-                pos_matriz_destino = matriz[lc[0] + offset[0], lc[1] + offset[1]]
-                if pos_matriz_destino is not None:
-                    if pos_matriz_destino.cor != self.cor:
-                        mov.append((casa_destino, TipoMov.CAPTURA))
-                else:
-                    mov.append((casa_destino, TipoMov.NORMAL))
+                mov.append(casa_destino)
 
         return mov
