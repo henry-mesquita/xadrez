@@ -1,0 +1,67 @@
+from constantes import *
+from pecas.peca import Peca
+from pygame import Vector2 as vetor
+from os.path import join
+import pygame as pg
+
+
+class Dama(Peca):
+    CAMINHOS_SPRITES = {
+        'w': 'dama_branca.png',
+        'b': 'dama_preta.png'
+    }
+
+    def __init__(
+        self,
+        cor: str,
+        TAMANHO_PECA: int,
+        posicao: vetor
+    ) -> None:
+        super().__init__(cor, posicao)
+        self.inicializar_sprite(
+            largura=TAMANHO_PECA,
+            altura=TAMANHO_PECA,
+            nome_sprite=self.CAMINHOS_SPRITES[self.cor]
+        )
+
+
+    def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
+        """
+        Gera os movimentos pseudo legais da dama.
+
+        Args:
+            matriz (np.ndarray): Matriz do tabuleiro.
+            lc (tuple[int, int]): Linha e coluna da peça.
+
+        Returns:
+            list: Lista de movimentos possíveis.
+        """
+        mov: list[tuple[int, int]] = []
+
+        direcoes = ((0, 1), (0, -1), (1, 0), (-1, 0)) # horizontais
+
+        for direcao in direcoes:
+            l = lc[0]
+            c = lc[1]
+            while True:
+                l += direcao[0]
+                c += direcao[1]
+
+                if not self.lc_valido(l, c):
+                    break
+                mov.append((l, c))
+
+        direcoes = ((-1, -1), (-1, 1), (1, -1), (1, 1)) # diagonais
+
+        for direcao in direcoes:
+            l = lc[0]
+            c = lc[1]
+            while True:
+                l += direcao[0]
+                c += direcao[1]
+
+                if not self.lc_valido(l, c):
+                    break
+                mov.append((l, c))
+
+        return mov

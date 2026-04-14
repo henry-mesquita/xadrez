@@ -1,11 +1,26 @@
 from constantes import *
 import pygame as pg
-from peca import Peca, TipoMov
+from pecas.peca import Peca, TipoMov
+from pecas.bispo import Bispo
+from pecas.cavalo import Cavalo
+from pecas.dama import Dama
+from pecas.peao import Peao
+from pecas.rei import Rei
+from pecas.torre import Torre
 from pygame import Vector2 as vetor
 import numpy as np
 
 
 class Tabuleiro:
+    MAPA_PECAS: dict[str, type[Peca]] = {
+        'p': Peao,
+        'r': Torre,
+        'n': Cavalo,
+        'b': Bispo,
+        'q': Dama,
+        'k': Rei
+    }
+
     def __init__(self) -> None:
         """
         Inicializa o tabuleiro.
@@ -55,6 +70,14 @@ class Tabuleiro:
         return 0 <= linha < 8 and 0 <= coluna < 8
 
 
+    def criar_peca(self, tipo, cor, pos):
+        return self.MAPA_PECAS[tipo](
+            cor=cor,
+            TAMANHO_PECA=TAMANHO_PECA,
+            posicao=pos
+        )
+
+
     def carregar_posicao_fen(self, fen: str) -> None:
         """
         Carrega uma posição no padrão FEN para a matriz do tabuleiro.
@@ -86,12 +109,7 @@ class Tabuleiro:
                     idx = i * 8 + j
                     pos = self.posicao_topleft_casas[idx]
 
-                    self.matriz[i, j] = Peca(
-                        cor=cor,
-                        tipo=tipo,
-                        TAMANHO_PECA=TAMANHO_PECA,
-                        posicao=pos
-                    )
+                    self.matriz[i, j] = self.criar_peca(tipo, cor, pos)
 
                     j += 1
 
@@ -99,7 +117,7 @@ class Tabuleiro:
                 raise ValueError("FEN inválida: rank não fecha em 8 colunas.")
 
 
-    def achar_lc_peca(self, peca: Peca) -> tuple[int, int] | None:
+    def achar_lc_peca(self, peca) -> tuple[int, int] | None:
         """
         Encontra a linha e coluna da peça na matriz.
 
@@ -112,7 +130,7 @@ class Tabuleiro:
                     return (li, co)
     
 
-    def gerar_mov_peca(self, p: Peca) -> None | list[tuple[tuple[int, int], TipoMov]]:
+    def gerar_mov_peca(self, p) -> None | list[tuple[tuple[int, int], TipoMov]]:
         """
         Gera os movimentos possíveis para a peça selecionada.
 
@@ -136,7 +154,7 @@ class Tabuleiro:
 
     def _classificar_movimentos(
         self,
-        peca: Peca,
+        peca,
         origem: tuple[int, int],
         movimentos: list[tuple[int, int]]
     ) -> list[tuple[tuple[int, int], TipoMov]]:
@@ -161,7 +179,7 @@ class Tabuleiro:
 
     def _validar_movimento(
         self,
-        peca: Peca,
+        peca,
         origem: tuple[int, int],
         destino_lc: tuple[int, int]
     ) -> TipoMov | None:
@@ -178,7 +196,7 @@ class Tabuleiro:
         """
         destino = self.matriz[destino_lc[0], destino_lc[1]]
 
-        if peca.tipo == 'p':
+        if isinstance(peca, Peao):
             delta = (destino_lc[0] - origem[0], destino_lc[1] - origem[1])
             if peca.cor == 'w':
                 forward = (-1, 0)
@@ -205,7 +223,7 @@ class Tabuleiro:
 
             return None
 
-        if peca.tipo in ('b', 'r', 'q'):
+        if isinstance(peca, (Bispo, Dama, Torre)):
             if not self._caminho_livre(origem, destino_lc):
                 return None
 
@@ -322,7 +340,7 @@ class Tabuleiro:
 
         for li in range(8):
             for co in range(8):
-                p: Peca = self.matriz[li, co]
+                p = self.matriz[li, co]
 
                 if p is not None and p.rect.collidepoint(event.pos):
                     if p.cor != self.turno:
@@ -331,7 +349,7 @@ class Tabuleiro:
                     return
 
 
-    def _selecionar_peca(self, peca: Peca, li: int, co: int, mouse_pos: tuple[int, int]) -> None:
+    def _selecionar_peca(self, peca, li: int, co: int, mouse_pos: tuple[int, int]) -> None:
         """
         Seleciona a peça clicada.
         
@@ -384,7 +402,7 @@ class Tabuleiro:
         self.origem_lc = None
 
 
-    def soltar_peca(self, peca: Peca) -> None:
+    def soltar_peca(self, peca) -> None:
         """
         Solta a peça na casa alvo caso possível.
 
@@ -473,7 +491,7 @@ class Tabuleiro:
         for li in range(8):
             for co in range(8):
                 p = self.matriz[li, co]
-                if p is not None and p.tipo == 'k' and p.cor == cor:
+                if p is not None and isinstance(p, Rei) and p.cor == cor:
                     return (li, co)
         return None
 
@@ -504,7 +522,7 @@ class Tabuleiro:
                 if destino is None:
                     continue
 
-                if destino.cor != cor and destino.tipo in ('r', 'q'):
+                if destino.cor != cor and isinstance(destino, (Torre, Dama)):
                     return True
                 break
 
@@ -525,7 +543,7 @@ class Tabuleiro:
                 if destino is None:
                     continue
 
-                if destino.cor != cor and destino.tipo in ('b', 'q'):
+                if destino.cor != cor and isinstance(destino, (Bispo, Dama)):
                     return True
                 break
 
@@ -556,7 +574,7 @@ class Tabuleiro:
             if destino is None:
                 continue
 
-            if destino.tipo == 'n' and destino.cor != cor:
+            if isinstance(destino, Cavalo) and destino.cor != cor:
                 return True
         
         # rei
@@ -585,7 +603,7 @@ class Tabuleiro:
             if destino is None:
                 continue
             
-            if destino.tipo == 'k' and destino.cor != cor:
+            if isinstance(destino, Rei) and destino.cor != cor:
                 return True
         
         # peão
@@ -615,7 +633,7 @@ class Tabuleiro:
             if destino is None:
                 continue
             
-            if destino.tipo == 'p' and destino.cor != cor:
+            if isinstance(destino, Peao) and destino.cor != cor:
                 return True
         return False
 
@@ -665,7 +683,7 @@ class Tabuleiro:
                 if peca not in (None, self.peca_selecionada):
                     peca.desenhar_sprite(surf)
 
-        self.desenhar_pseudo_movimentos(surf)
+        self.desenhar_movimentos_possiveis(surf)
 
         if self.peca_selecionada is not None:
             self.peca_selecionada.desenhar_sprite(surf)

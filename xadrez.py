@@ -16,7 +16,8 @@ class Xadrez:
 
         pg.display.set_caption('Xadrez')
         self.atualizar_icone()
-    
+
+
     def atualizar_icone(self) -> None:
         """
         Atualiza o icone da janela.
@@ -26,13 +27,15 @@ class Xadrez:
         
         pg.display.set_icon(icone)
     
-    def run(self) -> None:
+
+    def run(self, mostrar_fps: bool) -> None:
         """
         Inicializa o pygame e executa o game loop.
         """
         self.running: bool = True
 
         pg.init()
+        self.fonte: pg.font.Font = pg.font.SysFont(None, 30)
         while self.running:
             try:
                 # PROCESSAR
@@ -45,12 +48,25 @@ class Xadrez:
 
                 self.tela.blit(self.surface_tabuleiro, TAB_POS)
 
+                if mostrar_fps:
+                    self.mostrar_fps()
+
                 # ATUALIZAR
-                self.clock.tick(FRAMERATE)
                 pg.display.flip()
+                self.clock.tick(FRAMERATE)
             except KeyboardInterrupt:
                 self.running = False
         pg.quit()
+
+
+    def mostrar_fps(self) -> None:
+        """
+        Mostra o FPS na tela.
+        """
+        fps = self.clock.get_fps()
+        texto_fps = self.fonte.render(f"FPS: {int(fps)}", True, COR_TEXTO)
+        self.tela.blit(texto_fps, (10, 10))
+
 
     def event_loop(self) -> None:
         """
