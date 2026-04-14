@@ -1,8 +1,6 @@
 from constantes import *
 from pecas.peca import Peca
 from pygame import Vector2 as vetor
-from os.path import join
-import pygame as pg
 
 
 class Bispo(Peca):
