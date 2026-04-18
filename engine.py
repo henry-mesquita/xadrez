@@ -213,3 +213,178 @@ class Engine:
                 return False
             atual = (atual[0] + passo_l, atual[1] + passo_c)
         return True
+
+
+    def achar_lc_rei(self, cor: str) -> tuple[int, int] | None:
+        """
+        Encontra a linha e coluna do rei na matriz baseado na cor passada por parâmetro.
+
+        Args:
+            cor (str): Cor do rei.
+
+        Returns:
+            tuple[int, int] | None: Linha e coluna do rei, ou None se o rei nao for encontrado.
+        """
+        cor = cor.lower()
+        if cor not in ('b', 'w'):
+            raise ValueError('Cor precisa ser "w" ou "b"')
+
+        for li in range(8):
+            for co in range(8):
+                p = self.matriz[li, co]
+                if p is not None and isinstance(p, Rei) and p.cor == cor:
+                    return (li, co)
+        return None
+
+
+    def verificar_xeque(self, cor: str) -> bool:
+        cor = cor.lower()
+        if cor not in ('b', 'w'):
+            raise ValueError('Cor precisa ser "w" ou "b"')
+        
+        lc_rei = self.achar_lc_rei(cor)
+        if lc_rei is None:
+            return False
+
+        # torre e dama (horizontais)
+        direcoes_horizontais = ((0, 1), (0, -1), (1, 0), (-1, 0))
+        for direcao in direcoes_horizontais:
+            l = lc_rei[0]
+            c = lc_rei[1]
+            while True:
+                l += direcao[0]
+                c += direcao[1]
+
+                if not self.lc_valido(l, c):
+                    break
+                
+                destino = self.matriz[l, c]
+
+                if destino is None:
+                    continue
+
+                if destino.cor != cor and isinstance(destino, (Torre, Dama)):
+                    return True
+                break
+
+        # bispo e dama (diagonais)
+        direcoes_diagonais = ((-1, -1), (-1, 1), (1, -1), (1, 1))
+        for direcao in direcoes_diagonais:
+            l = lc_rei[0]
+            c = lc_rei[1]
+            while True:
+                l += direcao[0]
+                c += direcao[1]
+
+                if not self.lc_valido(l, c):
+                    break
+                
+                destino = self.matriz[l, c]
+
+                if destino is None:
+                    continue
+
+                if destino.cor != cor and isinstance(destino, (Bispo, Dama)):
+                    return True
+                break
+
+        # cavalo
+        offsets_cavalo = [
+            (-2, -1),
+            (-2, 1),
+            (-1, -2),
+            (-1, 2),
+            (2, -1),
+            (2, 1),
+            (1, -2),
+            (1, 2)
+        ]
+
+        for offset in offsets_cavalo:
+            l = lc_rei[0]
+            c = lc_rei[1]
+
+            l += offset[0]
+            c += offset[1]
+
+            if not self.lc_valido(l, c):
+                continue
+            
+            destino = self.matriz[l, c]
+
+            if destino is None:
+                continue
+
+            if isinstance(destino, Cavalo) and destino.cor != cor:
+                return True
+        
+        # rei
+        offsets_rei = [
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1),
+            (0, -1),
+            (0, 1)
+        ]
+        for offset in offsets_rei:
+            l = lc_rei[0]
+            c = lc_rei[1]
+
+            l += offset[0]
+            c += offset[1]
+
+            if not self.lc_valido(l, c):
+                continue
+            
+            destino = self.matriz[l, c]
+
+            if destino is None:
+                continue
+            
+            if isinstance(destino, Rei) and destino.cor != cor:
+                return True
+        
+        # peão
+        if cor == 'w':
+            offsets_peao = [
+                (-1, -1),
+                (-1, 1)
+            ]
+        elif cor == 'b':
+            offsets_peao = [
+                (1, -1),
+                (1, 1)
+            ]
+        
+        for offset in offsets_peao:
+            l = lc_rei[0]
+            c = lc_rei[1]
+
+            l += offset[0]
+            c += offset[1]
+
+            if not self.lc_valido(l, c):
+                continue
+            
+            destino = self.matriz[l, c]
+
+            if destino is None:
+                continue
+            
+            if isinstance(destino, Peao) and destino.cor != cor:
+                return True
+        return False
+
+
+    @staticmethod
+    def lc_valido(linha: int, coluna: int) -> bool:
+        """
+        Verifica se a linha e coluna são válidas.
+
+        Returns:
+            bool: True se a linha e coluna forem validas, False caso contrário.
+        """
+        return 0 <= linha < 8 and 0 <= coluna < 8
