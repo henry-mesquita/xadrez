@@ -11,18 +11,10 @@ from pygame import Vector2 as vetor, Surface
 import numpy as np
 from os.path import join
 from pathlib import Path
+from engine import Engine
 
 
 class Renderer:
-    MAPA_PECAS: dict[str, type[Peca]] = {
-        'p': Peao,
-        'r': Torre,
-        'n': Cavalo,
-        'b': Bispo,
-        'q': Dama,
-        'k': Rei
-    }
-
     MAPA_SPRITES = {
         'wk': 'rei_branco.png',
         'bk': 'rei_preto.png',
@@ -46,7 +38,8 @@ class Renderer:
         """
         Inicializa o renderer.
         """
-        pg.init()
+        self.engine: Engine = Engine()
+
         self.inicializar_pg()
 
         self.click: bool = False
@@ -54,25 +47,15 @@ class Renderer:
         self.drag_offset = vetor(0, 0)  # Offset da peça ao clicar (variável apenas para arrumar o offset)
         self.origem_lc: tuple[int, int] | None = None # Casa onde a peça foi clicada (linha, coluna)
 
-        self.matriz: np.ndarray = np.full((8, 8), None, dtype=object) # Matriz do tabuleiro
         self.posicao_topleft_casas: list[vetor] = self.calcular_pos_casas()
 
         # flag pra não deixar gerar movimentos a cada frame
         self.flag_gerar_movimentos = True
-        self.movimentos_possiveis: list[tuple[tuple[int, int], TipoMov]] = [] # Movimentos já gerados ao clicar na peça
-        self.pseudo_movimentos = None
-
-        self.carregar_posicao_fen(fen=FEN_INICIAL)
         self.inicializar_sprites_tabuleiro(TAMANHO_PECA, TAMANHO_PECA)
-        self.turno = 'w' # w = branco | b = preto
-
-
-    def mudar_turno(self) -> None:
-        self.turno = 'b' if self.turno == 'w' else 'w'
     
 
     def inicializar_sprites_tabuleiro(self, largura: int, altura: int) -> None:
-        for linha in self.matriz:
+        for linha in self.engine.matriz:
             for peca in linha:
                 if peca is None:
                     continue
@@ -161,56 +144,11 @@ class Renderer:
             tela.blit(peca.sprite, peca.rect)
 
 
-    def criar_peca(self, tipo, cor, pos):
-        return self.MAPA_PECAS[tipo](
-            cor=cor,
-            posicao=pos
-        )
-
-
     def inicializar_sprite(self, peca: Peca, largura: int, altura: int, nome_sprite: str) -> None:
         caminho_sprite = self.IMG_DIR / nome_sprite
         peca.sprite = pg.transform.scale(pg.image.load(caminho_sprite), (largura, altura))
         posicao_pixels = self.lc_para_posicao(peca.posicao[0], peca.posicao[1])
         peca.rect = peca.sprite.get_rect(topleft=posicao_pixels)
-
-
-    def carregar_posicao_fen(self, fen: str) -> None:
-        """
-        Carrega uma posição no padrão FEN para a matriz do tabuleiro.
-
-        Args:
-            fen (str): FEN do tabuleiro.
-        """
-        placement = fen.strip().split()[0]
-        ranks = placement.split('/')
-
-        if len(ranks) != 8:
-            raise ValueError("FEN inválida: deve ter 8 ranks no piece placement.")
-
-        for i, rank in enumerate(ranks):
-            j = 0
-            for ch in rank:
-                if ch.isdigit():
-                    j += int(ch)
-                else:
-                    cor = 'w' if ch.isupper() else 'b'
-                    tipo = ch.lower()
-
-                    if tipo not in ('p', 'r', 'n', 'b', 'q', 'k'):
-                        raise ValueError(f"FEN inválida: peça desconhecida '{ch}'.")
-
-                    if j >= 8:
-                        raise ValueError("FEN inválida: rank excede 8 colunas.")
-
-                    # idx = i * 8 + j
-                    # pos = (self.posicao_topleft_casas[idx].x, self.posicao_topleft_casas[idx].y)
-
-                    self.matriz[i, j] = self.criar_peca(tipo, cor, [i, j])
-                    j += 1
-
-            if j != 8:
-                raise ValueError("FEN inválida: rank não fecha em 8 colunas.")
 
 
     def achar_lc_peca(self, peca) -> tuple[int, int] | None:
@@ -222,7 +160,7 @@ class Renderer:
         """
         for li in range(8):
             for co in range(8):
-                if self.matriz[li, co] == peca:
+                if self.engine.matriz[li, co] == peca:
                     return (li, co)
     
 
@@ -239,13 +177,13 @@ class Renderer:
         self.flag_gerar_movimentos = False
         origem = self.achar_lc_peca(p)
         if origem is None:
-            self.movimentos_possiveis = []
-            self.pseudo_movimentos = []
-            return self.movimentos_possiveis
+            self.engine.movimentos_possiveis = []
+            self.engine.pseudo_movimentos = []
+            return self.engine.movimentos_possiveis
 
-        self.pseudo_movimentos = p.gerar_pseudo_movimentos(lc=origem)
-        self.movimentos_possiveis = self._classificar_movimentos(p, origem, self.pseudo_movimentos)
-        return self.movimentos_possiveis
+        self.engine.pseudo_movimentos = p.gerar_pseudo_movimentos(lc=origem)
+        self.engine.movimentos_possiveis = self._classificar_movimentos(p, origem, self.engine.pseudo_movimentos)
+        return self.engine.movimentos_possiveis
 
 
     def _classificar_movimentos(
@@ -290,7 +228,7 @@ class Renderer:
         Returns:
             TipoMov | None: Tipo de movimento válido ou None se inválido.
         """
-        destino = self.matriz[destino_lc[0], destino_lc[1]]
+        destino = self.engine.matriz[destino_lc[0], destino_lc[1]]
 
         if isinstance(peca, Peao):
             delta = (destino_lc[0] - origem[0], destino_lc[1] - origem[1])
@@ -308,7 +246,7 @@ class Renderer:
 
             if delta == double_forward:
                 meio = (origem[0] + forward[0], origem[1])
-                if destino is None and self.matriz[meio[0], meio[1]] is None:
+                if destino is None and self.engine.matriz[meio[0], meio[1]] is None:
                     return TipoMov.NORMAL
                 return None
 
@@ -351,7 +289,7 @@ class Renderer:
 
         atual = (origem[0] + passo_l, origem[1] + passo_c)
         while atual != destino:
-            if self.matriz[atual[0], atual[1]] is not None:
+            if self.engine.matriz[atual[0], atual[1]] is not None:
                 return False
             atual = (atual[0] + passo_l, atual[1] + passo_c)
         return True
@@ -362,7 +300,7 @@ class Renderer:
         Trata os eventos de arrastar e soltar.
         """
 
-        matriz_antiga = self.matriz.copy()
+        matriz_antiga = self.engine.matriz.copy()
 
         if self._is_left_click(event):
             self._handle_click(event)
@@ -373,8 +311,8 @@ class Renderer:
         elif self._is_release(event):
             self._handle_release()
         
-        if not np.array_equal(self.matriz, matriz_antiga):
-            self.mudar_turno()
+        if not np.array_equal(self.engine.matriz, matriz_antiga):
+            self.engine.mudar_turno()
 
 
     def _is_left_click(self, event: pg.Event) -> bool:
@@ -432,14 +370,14 @@ class Renderer:
         self.origem_lc = None
 
         self.flag_gerar_movimentos = True
-        self.movimentos_possiveis = []
+        self.engine.movimentos_possiveis = []
 
         for li in range(8):
             for co in range(8):
-                p = self.matriz[li, co]
+                p = self.engine.matriz[li, co]
 
                 if p is not None and p.rect.collidepoint(event.pos):
-                    if p.cor != self.turno:
+                    if p.cor != self.engine.turno:
                         return
                     self._selecionar_peca(p, li, co, event.pos)
                     return
@@ -528,7 +466,7 @@ class Renderer:
 
         # valida movimento
         movimentos_possiveis = []
-        for casa, _ in self.movimentos_possiveis:
+        for casa, _ in self.engine.movimentos_possiveis:
             movimentos_possiveis.append(casa)
         
         
@@ -545,13 +483,13 @@ class Renderer:
         # =========================
 
         # captura
-        ocupante = self.matriz[alvo_li, alvo_co]
+        ocupante = self.engine.matriz[alvo_li, alvo_co]
         if ocupante is not None and ocupante is not peca:
-            self.matriz[alvo_li, alvo_co] = None
+            self.engine.matriz[alvo_li, alvo_co] = None
 
         # move a peça
-        self.matriz[li0, co0] = None
-        self.matriz[alvo_li, alvo_co] = peca
+        self.engine.matriz[li0, co0] = None
+        self.engine.matriz[alvo_li, alvo_co] = peca
         peca.posicao = (alvo_li, alvo_co)
 
         # atualiza posição visual
@@ -560,8 +498,8 @@ class Renderer:
         peca.rect.topleft = (int(pos.x), int(pos.y))
 
         # limpa estados
-        self.movimentos_possiveis   = []
-        self.pseudo_movimentos      = []
+        self.engine.movimentos_possiveis   = []
+        self.engine.pseudo_movimentos      = []
         self.flag_gerar_movimentos  = True
 
         xeque_branco = self.verificar_xeque('w') # branco
@@ -587,7 +525,7 @@ class Renderer:
 
         for li in range(8):
             for co in range(8):
-                p = self.matriz[li, co]
+                p = self.engine.matriz[li, co]
                 if p is not None and isinstance(p, Rei) and p.cor == cor:
                     return (li, co)
         return None
@@ -614,7 +552,7 @@ class Renderer:
                 if not self.lc_valido(l, c):
                     break
                 
-                destino = self.matriz[l, c]
+                destino = self.engine.matriz[l, c]
 
                 if destino is None:
                     continue
@@ -635,7 +573,7 @@ class Renderer:
                 if not self.lc_valido(l, c):
                     break
                 
-                destino = self.matriz[l, c]
+                destino = self.engine.matriz[l, c]
 
                 if destino is None:
                     continue
@@ -666,7 +604,7 @@ class Renderer:
             if not self.lc_valido(l, c):
                 continue
             
-            destino = self.matriz[l, c]
+            destino = self.engine.matriz[l, c]
 
             if destino is None:
                 continue
@@ -695,7 +633,7 @@ class Renderer:
             if not self.lc_valido(l, c):
                 continue
             
-            destino = self.matriz[l, c]
+            destino = self.engine.matriz[l, c]
 
             if destino is None:
                 continue
@@ -725,7 +663,7 @@ class Renderer:
             if not self.lc_valido(l, c):
                 continue
             
-            destino = self.matriz[l, c]
+            destino = self.engine.matriz[l, c]
 
             if destino is None:
                 continue
@@ -782,7 +720,7 @@ class Renderer:
                     )
                 )
 
-        for linha in self.matriz:
+        for linha in self.engine.matriz:
             for peca in linha:
                 if peca not in (None, self.peca_selecionada):
                     self.desenhar_sprite(peca, self.surface_tabuleiro)
@@ -800,10 +738,10 @@ class Renderer:
         Args:
             surf (pg.Surface): Superfície na qual é desenhado o destaque.
         """
-        if self.pseudo_movimentos is None:
+        if self.engine.pseudo_movimentos is None:
             return
 
-        for (linha, coluna) in self.pseudo_movimentos:
+        for (linha, coluna) in self.engine.pseudo_movimentos:
             cor = (0, 255, 0)
 
             pg.draw.circle(
@@ -825,7 +763,7 @@ class Renderer:
         Args:
             surf (pg.Surface): Superfície na qual é desenhado o destaque.
         """
-        for (linha, coluna), tipo in self.movimentos_possiveis:
+        for (linha, coluna), tipo in self.engine.movimentos_possiveis:
             if tipo == TipoMov.CAPTURA:
                 cor = COR_CASAS_CAPTURA
             else:
