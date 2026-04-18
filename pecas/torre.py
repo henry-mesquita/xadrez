@@ -4,17 +4,13 @@ from pygame import Vector2 as vetor
 
 
 class Torre(Peca):
-    CAMINHOS_SPRITES = {
-        'w': 'torre_branca.png',
-        'b': 'torre_preta.png'
-    }
-
     def __init__(
         self,
         cor: str,
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
+        self.tipo = 'r'
 
 
     def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:

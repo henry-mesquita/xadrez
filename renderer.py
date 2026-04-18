@@ -26,19 +26,14 @@ class Renderer:
     MAPA_SPRITES = {
         'wk': 'rei_branco.png',
         'bk': 'rei_preto.png',
-
         'wq': 'dama_branca.png',
         'bq': 'dama_preta.png',
-
         'wr': 'torre_branca.png',
         'br': 'torre_preta.png',
-
         'wb': 'bispo_branco.png',
         'bb': 'bispo_preto.png',
-
         'wn': 'cavalo_branco.png',
         'bn': 'cavalo_preto.png',
-
         'wp': 'peao_branco.png',
         'bp': 'peao_preto.png'
     }
@@ -56,7 +51,7 @@ class Renderer:
 
         self.click: bool = False
         self.peca_selecionada = None    # Peça que o jogador clicou
-        self.drag_offset = vetor(0, 0)  # Offset da peça ao clicar
+        self.drag_offset = vetor(0, 0)  # Offset da peça ao clicar (variável apenas para arrumar o offset)
         self.origem_lc: tuple[int, int] | None = None # Casa onde a peça foi clicada (linha, coluna)
 
         self.matriz: np.ndarray = np.full((8, 8), None, dtype=object) # Matriz do tabuleiro
@@ -82,29 +77,14 @@ class Renderer:
                 if peca is None:
                     continue
 
-                cor = peca.cor  # 'w' ou 'b'
-
-                # pega a letra do tipo baseada na classe
-                tipo = self._mapear_tipo_peca(peca)
+                cor = peca.cor
+                tipo = peca.tipo
 
                 chave = f"{cor}{tipo}"
                 nome_sprite = self.MAPA_SPRITES[chave]
 
                 self.inicializar_sprite(peca, largura, altura, nome_sprite)
 
-
-    def _mapear_tipo_peca(self, peca: Peca) -> str:
-        mapa = {
-            'Rei': 'k',
-            'Dama': 'q',
-            'Torre': 'r',
-            'Bispo': 'b',
-            'Cavalo': 'n',
-            'Peao': 'p'
-        }
-
-        return mapa[peca.__class__.__name__]
-    
 
     def inicializar_pg(self) -> None:
         self.tela: Surface              = pg.display.set_mode(TAMANHO_TELA)

@@ -4,17 +4,13 @@ from pygame import Vector2 as vetor
 
 
 class Rei(Peca):
-    CAMINHOS_SPRITES = {
-        'w': 'rei_branco.png',
-        'b': 'rei_preto.png'
-    }
-
     def __init__(
         self,
         cor: str,
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
+        self.tipo = 'k'
 
 
     def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:

@@ -3,17 +3,13 @@ from pecas.peca import Peca
 
 
 class Dama(Peca):
-    CAMINHOS_SPRITES = {
-        'w': 'dama_branca.png',
-        'b': 'dama_preta.png'
-    }
-
     def __init__(
         self,
         cor: str,
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
+        self.tipo = 'q'
 
 
     def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:

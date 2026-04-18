@@ -4,17 +4,13 @@ from pygame import Vector2 as vetor
 
 
 class Bispo(Peca):
-    CAMINHOS_SPRITES = {
-        'w': 'bispo_branco.png',
-        'b': 'bispo_preto.png'
-    }
-
     def __init__(
         self,
         cor: str,
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
+        self.tipo = 'b'
 
 
     def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
