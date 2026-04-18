@@ -355,9 +355,9 @@ class Renderer:
         peca.rect.topleft = (int(pos.x), int(pos.y))
 
         # limpa estados
-        self.engine.movimentos_possiveis   = []
-        self.engine.pseudo_movimentos      = []
-        self.flag_gerar_movimentos  = True
+        self.engine.movimentos_possiveis    = []
+        self.engine.pseudo_movimentos       = []
+        self.flag_gerar_movimentos          = True
 
         xeque_branco = self.engine.verificar_xeque('w') # branco
         xeque_preto = self.engine.verificar_xeque('b') # preto

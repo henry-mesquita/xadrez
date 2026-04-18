@@ -7,6 +7,13 @@ from pecas.dama import Dama
 from pecas.peao import Peao
 from pecas.rei import Rei
 from pecas.torre import Torre
+from dataclasses import dataclass
+
+
+@dataclass
+class Movimento:
+    origem:     tuple[int, int]
+    destino:    tuple[int, int]
 
 
 class Engine:
