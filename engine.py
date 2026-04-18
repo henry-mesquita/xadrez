@@ -72,3 +72,144 @@ class Engine:
             cor=cor,
             posicao=pos
         )
+
+
+    def achar_lc_peca(self, peca) -> tuple[int, int] | None:
+        """
+        Encontra a linha e coluna da peça na matriz.
+
+        Returns:
+            tuple[int, int] | None: Linha e coluna da peça, ou None se a peça não for encontrada.
+        """
+        for li in range(8):
+            for co in range(8):
+                if self.matriz[li, co] == peca:
+                    return (li, co)
+
+
+    def gerar_mov_peca(self, p) -> None:
+        """
+        Gera os movimentos possíveis para a peça selecionada.
+
+        Args:
+            p (Peca): Peça selecionada.
+
+        Returns:
+            list[tuple[tuple[int, int], TipoMov]]: Lista de movimentos possíveis com tipo.
+        """
+        origem = self.achar_lc_peca(p)
+        if origem is None:
+            self.movimentos_possiveis = []
+            self.pseudo_movimentos = []
+
+        self.pseudo_movimentos = p.gerar_pseudo_movimentos(lc=origem)
+        self.movimentos_possiveis = self._classificar_movimentos(p, origem, self.pseudo_movimentos)
+
+
+    def _classificar_movimentos(
+        self,
+        peca,
+        origem: tuple[int, int],
+        movimentos: list[tuple[int, int]]
+    ) -> list[tuple[tuple[int, int], TipoMov]]:
+        """
+        Classifica movimentos pseudo-legais como normais ou de captura.
+
+        Args:
+            peca (Peca): A peça que está se movendo.
+            origem (tuple[int, int]): Casa de origem da peça.
+            movimentos (list[tuple[int, int]]): Movimentos pseudo-legais gerados pela peça.
+
+        Returns:
+            list[tuple[tuple[int, int], TipoMov]]: Movimentos válidos com tipo.
+        """
+        movs: list[tuple[tuple[int, int], TipoMov]] = []
+        for casa in movimentos:
+            tipo = self._validar_movimento(peca, origem, casa)
+            if tipo is not None:
+                movs.append((casa, tipo))
+        return movs
+
+
+    def _validar_movimento(
+        self,
+        peca,
+        origem: tuple[int, int],
+        destino_lc: tuple[int, int]
+    ) -> TipoMov | None:
+        """
+        Valida um movimento pseudo-legal e determina o tipo de movimento.
+
+        Args:
+            peca (Peca): Peça que está se movendo.
+            origem (tuple[int, int]): Casa de origem.
+            destino_lc (tuple[int, int]): Casa de destino.
+
+        Returns:
+            TipoMov | None: Tipo de movimento válido ou None se inválido.
+        """
+        destino = self.matriz[destino_lc[0], destino_lc[1]]
+
+        if isinstance(peca, Peao):
+            delta = (destino_lc[0] - origem[0], destino_lc[1] - origem[1])
+            if peca.cor == 'w':
+                forward = (-1, 0)
+                double_forward = (-2, 0)
+                captures = [(-1, -1), (-1, 1)]
+            else:
+                forward = (1, 0)
+                double_forward = (2, 0)
+                captures = [(1, -1), (1, 1)]
+
+            if delta == forward:
+                return TipoMov.NORMAL if destino is None else None
+
+            if delta == double_forward:
+                meio = (origem[0] + forward[0], origem[1])
+                if destino is None and self.matriz[meio[0], meio[1]] is None:
+                    return TipoMov.NORMAL
+                return None
+
+            if delta in captures:
+                if destino is not None and destino.cor != peca.cor:
+                    return TipoMov.CAPTURA
+                return None
+
+            return None
+
+        if isinstance(peca, (Bispo, Dama, Torre)):
+            if not self._caminho_livre(origem, destino_lc):
+                return None
+
+        if destino is not None:
+            if destino.cor == peca.cor:
+                return None
+            return TipoMov.CAPTURA
+
+        return TipoMov.NORMAL
+
+
+    def _caminho_livre(self, origem: tuple[int, int], destino: tuple[int, int]) -> bool:
+        """
+        Verifica se o caminho entre origem e destino está livre para movimentos deslizantes.
+
+        Args:
+            origem (tuple[int, int]): Casa de origem.
+            destino (tuple[int, int]): Casa de destino.
+
+        Returns:
+            bool: True se não houver peças entre origem e destino.
+        """
+        delta = (destino[0] - origem[0], destino[1] - origem[1])
+        passo_l = 0 if delta[0] == 0 else (1 if delta[0] > 0 else -1)
+        passo_c = 0 if delta[1] == 0 else (1 if delta[1] > 0 else -1)
+
+        if passo_l == 0 and passo_c == 0:
+            return False
+
+        atual = (origem[0] + passo_l, origem[1] + passo_c)
+        while atual != destino:
+            if self.matriz[atual[0], atual[1]] is not None:
+                return False
+            atual = (atual[0] + passo_l, atual[1] + passo_c)
+        return True
