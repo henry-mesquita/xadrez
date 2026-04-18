@@ -8,7 +8,7 @@ class Xadrez:
         """
         Inicializa o jogo de xadrez.
         """
-        self.clock: Clock               = Clock()
+        self.clock: Clock = Clock()
 
 
     def run(self, mostrar_fps: bool) -> None:

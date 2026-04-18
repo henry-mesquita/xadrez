@@ -10,6 +10,8 @@ from pecas.torre import Torre
 from pygame import Vector2 as vetor, Surface
 import numpy as np
 from os.path import join
+from pathlib import Path
+
 
 class Renderer:
     MAPA_PECAS: dict[str, type[Peca]] = {
@@ -20,6 +22,30 @@ class Renderer:
         'q': Dama,
         'k': Rei
     }
+
+    MAPA_SPRITES = {
+        'wk': 'rei_branco.png',
+        'bk': 'rei_preto.png',
+
+        'wq': 'dama_branca.png',
+        'bq': 'dama_preta.png',
+
+        'wr': 'torre_branca.png',
+        'br': 'torre_preta.png',
+
+        'wb': 'bispo_branco.png',
+        'bb': 'bispo_preto.png',
+
+        'wn': 'cavalo_branco.png',
+        'bn': 'cavalo_preto.png',
+
+        'wp': 'peao_branco.png',
+        'bp': 'peao_preto.png'
+    }
+
+    BASE_DIR    = Path(__file__).resolve()
+    IMG_DIR     = BASE_DIR.parent / "img"
+
 
     def __init__(self) -> None:
         """
@@ -42,10 +68,42 @@ class Renderer:
         self.pseudo_movimentos = None
 
         self.carregar_posicao_fen(fen=FEN_INICIAL)
+        self.inicializar_sprites_tabuleiro(TAMANHO_PECA, TAMANHO_PECA)
         self.turno = 'w' # w = branco | b = preto
+
 
     def mudar_turno(self) -> None:
         self.turno = 'b' if self.turno == 'w' else 'w'
+    
+
+    def inicializar_sprites_tabuleiro(self, largura: int, altura: int) -> None:
+        for linha in self.matriz:
+            for peca in linha:
+                if peca is None:
+                    continue
+
+                cor = peca.cor  # 'w' ou 'b'
+
+                # pega a letra do tipo baseada na classe
+                tipo = self._mapear_tipo_peca(peca)
+
+                chave = f"{cor}{tipo}"
+                nome_sprite = self.MAPA_SPRITES[chave]
+
+                self.inicializar_sprite(peca, largura, altura, nome_sprite)
+
+
+    def _mapear_tipo_peca(self, peca: Peca) -> str:
+        mapa = {
+            'Rei': 'k',
+            'Dama': 'q',
+            'Torre': 'r',
+            'Bispo': 'b',
+            'Cavalo': 'n',
+            'Peao': 'p'
+        }
+
+        return mapa[peca.__class__.__name__]
     
 
     def inicializar_pg(self) -> None:
@@ -99,12 +157,28 @@ class Renderer:
         return 0 <= linha < 8 and 0 <= coluna < 8
 
 
+    def desenhar_sprite(self, peca: Peca, tela: pg.Surface) -> None:
+        """
+        Desenha o sprite da peça na tela.
+        
+        Args:
+            tela (pg.Surface): Superfície na qual é desenhado o sprite.
+        """
+        if peca.sprite is not None:
+            tela.blit(peca.sprite, peca.rect)
+
+
     def criar_peca(self, tipo, cor, pos):
         return self.MAPA_PECAS[tipo](
             cor=cor,
-            TAMANHO_PECA=TAMANHO_PECA,
             posicao=pos
         )
+
+
+    def inicializar_sprite(self, peca: Peca, largura: int, altura: int, nome_sprite: str) -> None:
+        caminho_sprite = self.IMG_DIR / nome_sprite
+        peca.sprite = pg.transform.scale(pg.image.load(caminho_sprite), (largura, altura))
+        peca.rect = peca.sprite.get_rect(topleft=peca.posicao)
 
 
     def carregar_posicao_fen(self, fen: str) -> None:
@@ -717,12 +791,12 @@ class Renderer:
         for linha in self.matriz:
             for peca in linha:
                 if peca not in (None, self.peca_selecionada):
-                    peca.desenhar_sprite(self.surface_tabuleiro)
+                    self.desenhar_sprite(peca, self.surface_tabuleiro)
 
         self.desenhar_movimentos_possiveis(self.surface_tabuleiro)
 
         if self.peca_selecionada is not None:
-            self.peca_selecionada.desenhar_sprite(self.surface_tabuleiro)
+            self.desenhar_sprite(self.peca_selecionada, self.surface_tabuleiro)
 
 
     def desenhar_pseudo_movimentos(self, surf: pg.Surface) -> None:

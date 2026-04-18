@@ -12,15 +12,9 @@ class Dama(Peca):
     def __init__(
         self,
         cor: str,
-        TAMANHO_PECA: int,
         posicao: vetor
     ) -> None:
         super().__init__(cor, posicao)
-        self.inicializar_sprite(
-            largura=TAMANHO_PECA,
-            altura=TAMANHO_PECA,
-            nome_sprite=self.CAMINHOS_SPRITES[self.cor]
-        )
 
 
     def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
