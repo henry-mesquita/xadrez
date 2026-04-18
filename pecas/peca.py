@@ -25,7 +25,7 @@ class Peca:
             raise ValueError("Cor tem que estar em: ('b', 'w')")
         
         self.cor: str                   = cor.lower()
-        self.posicao: list[int, int]    = posicao # Posição do sprite
+        self.posicao: list[int, int]    = posicao # Posição logica da peca (lc)
 
 
     def __str__(self) -> str:

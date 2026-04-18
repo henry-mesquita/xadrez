@@ -127,6 +127,19 @@ class Renderer:
 
 
     @staticmethod
+    def lc_para_posicao(linha: int, coluna: int) -> tuple[int, int]:
+        """
+        Converte linha e coluna do tabuleiro para posição em pixels (topleft).
+
+        Returns:
+            tuple[int, int]: (x, y)
+        """
+        x = coluna * TAM_CASA
+        y = linha * TAM_CASA
+        return x, y
+
+
+    @staticmethod
     def lc_valido(linha: int, coluna: int) -> bool:
         """
         Verifica se a linha e coluna são válidas.
@@ -158,7 +171,8 @@ class Renderer:
     def inicializar_sprite(self, peca: Peca, largura: int, altura: int, nome_sprite: str) -> None:
         caminho_sprite = self.IMG_DIR / nome_sprite
         peca.sprite = pg.transform.scale(pg.image.load(caminho_sprite), (largura, altura))
-        peca.rect = peca.sprite.get_rect(topleft=peca.posicao)
+        posicao_pixels = self.lc_para_posicao(peca.posicao[0], peca.posicao[1])
+        peca.rect = peca.sprite.get_rect(topleft=posicao_pixels)
 
 
     def carregar_posicao_fen(self, fen: str) -> None:
@@ -189,11 +203,10 @@ class Renderer:
                     if j >= 8:
                         raise ValueError("FEN inválida: rank excede 8 colunas.")
 
-                    idx = i * 8 + j
-                    pos = (self.posicao_topleft_casas[idx].x, self.posicao_topleft_casas[idx].y)
+                    # idx = i * 8 + j
+                    # pos = (self.posicao_topleft_casas[idx].x, self.posicao_topleft_casas[idx].y)
 
-                    self.matriz[i, j] = self.criar_peca(tipo, cor, pos)
-
+                    self.matriz[i, j] = self.criar_peca(tipo, cor, [i, j])
                     j += 1
 
             if j != 8:
@@ -539,6 +552,7 @@ class Renderer:
         # move a peça
         self.matriz[li0, co0] = None
         self.matriz[alvo_li, alvo_co] = peca
+        peca.posicao = (alvo_li, alvo_co)
 
         # atualiza posição visual
         idx = alvo_li * 8 + alvo_co
