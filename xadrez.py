@@ -2,6 +2,7 @@ from constantes import *
 import pygame as pg
 from pygame import Clock
 from renderer import Renderer
+from engine import Engine
 
 class Xadrez:
     def __init__(self) -> None:
@@ -16,7 +17,8 @@ class Xadrez:
         Inicializa o pygame e executa o game loop.
         """
         pg.init()
-        self.renderer: Renderer     = Renderer()
+        self.engine: Engine         = Engine()
+        self.renderer: Renderer     = Renderer(self.engine)
         self.running: bool          = True
         while self.running:
             try:

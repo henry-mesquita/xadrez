@@ -1,12 +1,6 @@
 from constantes import *
 import pygame as pg
 from pecas.peca import Peca, TipoMov
-from pecas.bispo import Bispo
-from pecas.cavalo import Cavalo
-from pecas.dama import Dama
-from pecas.peao import Peao
-from pecas.rei import Rei
-from pecas.torre import Torre
 from pygame import Vector2 as vetor, Surface
 import numpy as np
 from os.path import join
@@ -34,11 +28,11 @@ class Renderer:
     IMG_DIR     = BASE_DIR.parent / "img"
 
 
-    def __init__(self) -> None:
+    def __init__(self, engine: Engine) -> None:
         """
         Inicializa o renderer.
         """
-        self.engine: Engine = Engine()
+        self.engine: Engine = engine
 
         self.inicializar_pg()
 
