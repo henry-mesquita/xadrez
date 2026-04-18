@@ -377,21 +377,19 @@ class Renderer:
             y += TAM_CASA
         return l
 
-    
+
     def draw(self) -> None:
         self.tela.fill(PRETO)
-        self.surface_tabuleiro.fill((0, 0, 0))
-        self.desenhar()
+        self.surface_tabuleiro.fill(PRETO)
+
+        self._desenhar_tabuleiro()
+        self._desenhar_movimentos()
+        self._desenhar_pecas()
+
         self.tela.blit(self.surface_tabuleiro, TAB_POS)
 
 
-    def desenhar(self) -> None:
-        """
-        Desenha o tabuleiro e as peças na superficie (pygame.Surface).
-
-        Args:
-            surf (pygame.Surface): Superfície na qual é desenhado o tabuleiro.
-        """
+    def _desenhar_tabuleiro(self) -> None:
         for linha in range(8):
             for coluna in range(8):
                 cor = COR_CASAS_PARES if (linha + coluna) % 2 == 0 else COR_CASAS_IMPARES
@@ -407,18 +405,23 @@ class Renderer:
                     )
                 )
 
+
+    def _desenhar_pecas(self) -> None:
         for linha in self.engine.matriz:
             for peca in linha:
                 if peca not in (None, self.peca_selecionada):
                     self.desenhar_sprite(peca, self.surface_tabuleiro)
 
-        self.desenhar_movimentos_possiveis(self.surface_tabuleiro)
-
         if self.peca_selecionada is not None:
             self.desenhar_sprite(self.peca_selecionada, self.surface_tabuleiro)
 
 
-    def desenhar_pseudo_movimentos(self, surf: pg.Surface) -> None:
+    def _desenhar_movimentos(self) -> None:
+        self._desenhar_movimentos_possiveis(self.surface_tabuleiro)
+        # self._desenhar_pseudo_movimentos(self.surface_tabuleiro)
+
+
+    def _desenhar_pseudo_movimentos(self, surf: pg.Surface) -> None:
         """
         Desenha os movimentos pseudo-legais gerados pela peça.
 
@@ -443,26 +446,30 @@ class Renderer:
             )
 
 
-    def desenhar_movimentos_possiveis(self, surf: pg.Surface) -> None:
+    def _desenhar_movimentos_possiveis(self, surf: pg.Surface) -> None:
         """
         Desenha os movimentos já validados com tipo normal ou captura.
-
-        Args:
-            surf (pg.Surface): Superfície na qual é desenhado o destaque.
         """
         for (linha, coluna), tipo in self.engine.movimentos_possiveis:
-            if tipo == TipoMov.CAPTURA:
-                cor = COR_CASAS_CAPTURA
-            else:
-                cor = COR_CASAS_MOV
 
-            pg.draw.circle(
-                surf,
-                cor,
-                center=(
-                    coluna * TAM_CASA + TAM_CASA // 2,
-                    linha * TAM_CASA + TAM_CASA // 2
-                ),
-                radius=RAIO_CIRCULO,
-                width=0
-            )
+            x = coluna * TAM_CASA
+            y = linha * TAM_CASA
+
+            if tipo == TipoMov.CAPTURA:
+                pg.draw.rect(
+                    surf,
+                    COR_CASAS_CAPTURA,
+                    pg.Rect(x, y, TAM_CASA, TAM_CASA),
+                    width=3  # borda
+                )
+            else:
+                pg.draw.circle(
+                    surf,
+                    COR_CASAS_MOV,
+                    center=(
+                        x + TAM_CASA // 2,
+                        y + TAM_CASA // 2
+                    ),
+                    radius=RAIO_CIRCULO,
+                    width=0
+                )
