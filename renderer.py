@@ -7,11 +7,11 @@ from pecas.dama import Dama
 from pecas.peao import Peao
 from pecas.rei import Rei
 from pecas.torre import Torre
-from pygame import Vector2 as vetor
+from pygame import Vector2 as vetor, Surface
 import numpy as np
+from os.path import join
 
-
-class Tabuleiro:
+class Renderer:
     MAPA_PECAS: dict[str, type[Peca]] = {
         'p': Peao,
         'r': Torre,
@@ -23,8 +23,11 @@ class Tabuleiro:
 
     def __init__(self) -> None:
         """
-        Inicializa o tabuleiro.
+        Inicializa o renderer.
         """
+        pg.init()
+        self.inicializar_pg()
+
         self.click: bool = False
         self.peca_selecionada = None    # Peça que o jogador clicou
         self.drag_offset = vetor(0, 0)  # Offset da peça ao clicar
@@ -43,6 +46,32 @@ class Tabuleiro:
 
     def mudar_turno(self) -> None:
         self.turno = 'b' if self.turno == 'w' else 'w'
+    
+
+    def inicializar_pg(self) -> None:
+        self.tela: Surface              = pg.display.set_mode(TAMANHO_TELA)
+        self.surface_tabuleiro: Surface = Surface(TAM_TABULEIRO).convert()
+        self.atualizar_icone()
+        self.fonte = pg.font.SysFont(None, 30)
+        pg.display.set_caption('Xadrez')
+
+
+    def atualizar_icone(self) -> None:
+        """
+        Atualiza o icone da janela.
+        """
+        caminho: str    = join('img', 'cavalo_preto.png')
+        icone: Surface  = pg.image.load(caminho).convert_alpha()
+        
+        pg.display.set_icon(icone)
+    
+
+    def mostrar_fps(self, fps: int) -> None:
+        """
+        Mostra o FPS na tela.
+        """
+        texto_fps = self.fonte.render(f"FPS: {int(fps)}", True, COR_TEXTO)
+        self.tela.blit(texto_fps, (10, 10))
 
 
     @staticmethod
@@ -655,8 +684,15 @@ class Tabuleiro:
             y += TAM_CASA
         return l
 
+    
+    def draw(self) -> None:
+        self.tela.fill(PRETO)
+        self.surface_tabuleiro.fill((0, 0, 0))
+        self.desenhar()
+        self.tela.blit(self.surface_tabuleiro, TAB_POS)
 
-    def desenhar(self, surf: pg.Surface) -> None:
+
+    def desenhar(self) -> None:
         """
         Desenha o tabuleiro e as peças na superficie (pygame.Surface).
 
@@ -668,7 +704,7 @@ class Tabuleiro:
                 cor = COR_CASAS_PARES if (linha + coluna) % 2 == 0 else COR_CASAS_IMPARES
 
                 pg.draw.rect(
-                    surf,
+                    self.surface_tabuleiro,
                     cor,
                     pg.Rect(
                         coluna * TAM_CASA,
@@ -681,12 +717,12 @@ class Tabuleiro:
         for linha in self.matriz:
             for peca in linha:
                 if peca not in (None, self.peca_selecionada):
-                    peca.desenhar_sprite(surf)
+                    peca.desenhar_sprite(self.surface_tabuleiro)
 
-        self.desenhar_movimentos_possiveis(surf)
+        self.desenhar_movimentos_possiveis(self.surface_tabuleiro)
 
         if self.peca_selecionada is not None:
-            self.peca_selecionada.desenhar_sprite(surf)
+            self.peca_selecionada.desenhar_sprite(self.surface_tabuleiro)
 
 
     def desenhar_pseudo_movimentos(self, surf: pg.Surface) -> None:
