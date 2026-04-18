@@ -1,6 +1,5 @@
 from constantes import *
 from pecas.peca import Peca
-from pygame import Vector2 as vetor
 
 
 class Dama(Peca):
@@ -12,7 +11,7 @@ class Dama(Peca):
     def __init__(
         self,
         cor: str,
-        posicao: vetor
+        posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
 

@@ -1,6 +1,5 @@
 from constantes import *
 from pecas.peca import Peca
-from pygame import Vector2 as vetor
 
 
 class Cavalo(Peca):
@@ -12,7 +11,7 @@ class Cavalo(Peca):
     def __init__(
         self,
         cor: str,
-        posicao: vetor
+        posicao: tuple[int, int]
     ) -> None:
         super().__init__(cor, posicao)
 

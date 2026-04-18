@@ -1,6 +1,5 @@
-import pygame as pg
-from pygame import Vector2 as vetor
 from enum import Enum
+
 
 class TipoMov(Enum):
     NORMAL = 0
@@ -11,7 +10,7 @@ class Peca:
     def __init__(
         self,
         cor: str,
-        posicao: vetor
+        posicao: list[int, int]
     ) -> None:
         """
         Inicializa uma peça.
@@ -20,13 +19,13 @@ class Peca:
             cor (str): Cor da peça ('w' para branco ou 'b' para preto).
             tipo (str): Tipo da peça ('p' para peão, 'r' para torre, 'n' para cavalo, 'b' para bispo, 'q' para dama, 'k' para rei).
             TAMANHO_PECA (int): Tamanho da peça.
-            posicao (vetor): Posição da peça.
+            posicao (list[int, int]): Posição da peça.
         """
         if cor.lower() not in ('b', 'w'):
             raise ValueError("Cor tem que estar em: ('b', 'w')")
         
-        self.cor: str       = cor.lower()
-        self.posicao: vetor = posicao.copy() # Posição do sprite
+        self.cor: str                   = cor.lower()
+        self.posicao: list[int, int]    = posicao # Posição do sprite
 
 
     def __str__(self) -> str:

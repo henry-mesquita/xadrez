@@ -210,7 +210,7 @@ class Renderer:
                         raise ValueError("FEN inválida: rank excede 8 colunas.")
 
                     idx = i * 8 + j
-                    pos = self.posicao_topleft_casas[idx]
+                    pos = (self.posicao_topleft_casas[idx].x, self.posicao_topleft_casas[idx].y)
 
                     self.matriz[i, j] = self.criar_peca(tipo, cor, pos)
 

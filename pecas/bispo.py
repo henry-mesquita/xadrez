@@ -12,7 +12,7 @@ class Bispo(Peca):
     def __init__(
         self,
         cor: str,
-        posicao: vetor
+        posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
 
