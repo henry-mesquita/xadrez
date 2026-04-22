@@ -2,10 +2,11 @@ from xadrez import Xadrez
 
 def main() -> None:
     """
-    Inicia o jogo de xadrez.
+    Ponto de entrada do programa. Instancia e inicia o jogo.
     """
     jogo = Xadrez()
-    jogo.run(mostrar_fps=True)
+    jogo.run(debug=False)
+
 
 if __name__ == '__main__':
     main()

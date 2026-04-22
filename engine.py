@@ -7,13 +7,6 @@ from pecas.dama import Dama
 from pecas.peao import Peao
 from pecas.rei import Rei
 from pecas.torre import Torre
-from dataclasses import dataclass
-
-
-@dataclass
-class Movimento:
-    origem:     tuple[int, int]
-    destino:    tuple[int, int]
 
 
 class Engine:
@@ -26,7 +19,11 @@ class Engine:
         'k': Rei
     }
 
-    def __init__(self):
+
+    def __init__(self) -> None:
+        """
+        Inicializa a engine com o tabuleiro vazio e carrega a posição inicial.
+        """
         self.matriz: np.ndarray = np.full((8, 8), None, dtype=object)
         self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
         self.pseudo_movimentos:     list[tuple[tuple[int, int], TipoMov]]   = []
@@ -35,7 +32,38 @@ class Engine:
         self.turno = 'w' # w = branco | b = preto
 
 
+    def executar_movimento(self, mov: Movimento) -> bool:
+        """
+        Tenta executar um movimento na matriz. 
+
+        Args:
+            mov (Movimento): Objeto contendo as coordenadas de origem e destino.
+
+        Returns:
+            bool: True se o movimento foi bem sucedido, False caso contrário.
+        """
+        destinos_validos = [m[0] for m in self.movimentos_possiveis]
+        
+        if mov.destino not in destinos_validos:
+            return False
+
+        peca = self.matriz[mov.origem[0], mov.origem[1]]
+        
+        self.matriz[mov.destino[0], mov.destino[1]] = peca
+        self.matriz[mov.origem[0], mov.origem[1]] = None
+        
+        peca.posicao = mov.destino
+        
+        self.movimentos_possiveis = []
+        self.pseudo_movimentos = []
+        
+        return True
+
+
     def mudar_turno(self) -> None:
+        """
+        Alterna o turno atual entre branco ('w') e preto ('b').
+        """
         self.turno = 'b' if self.turno == 'w' else 'w'
 
 
@@ -44,7 +72,7 @@ class Engine:
         Carrega uma posição no padrão FEN para a matriz do tabuleiro.
 
         Args:
-            fen (str): FEN do tabuleiro.
+            fen (str): String no formato FEN.
         """
         placement = fen.strip().split()[0]
         ranks = placement.split('/')
@@ -67,55 +95,67 @@ class Engine:
                     if j >= 8:
                         raise ValueError("FEN inválida: rank excede 8 colunas.")
 
-                    self.matriz[i, j] = self.criar_peca(tipo, cor, [i, j])
+                    self.matriz[i, j] = self.criar_peca(tipo=tipo, cor=cor, pos=[i, j])
                     j += 1
 
             if j != 8:
                 raise ValueError("FEN inválida: rank não fecha em 8 colunas.")
 
 
-    def criar_peca(self, tipo, cor, pos):
+    def criar_peca(self, tipo: str, cor: str, pos: list[int]) -> Peca:
+        """
+        Instancia uma peça baseada no tipo e cor fornecidos.
+
+        Args:
+            tipo (str): Caractere representando o tipo da peça.
+            cor (str): 'w' para branco, 'b' para preto.
+            pos (list[int]): Coordenadas [linha, coluna].
+
+        Returns:
+            Peca: Instância da classe da peça correspondente.
+        """
         return self.MAPA_PECAS[tipo](
             cor=cor,
             posicao=pos
         )
 
 
-    def achar_lc_peca(self, peca) -> tuple[int, int] | None:
+    def achar_lc_peca(self, peca: Peca) -> tuple[int, int] | None:
         """
-        Encontra a linha e coluna da peça na matriz.
+        Encontra a linha e coluna de uma instância de peça na matriz.
+
+        Args:
+            peca (Peca): Instância da peça a ser localizada.
 
         Returns:
-            tuple[int, int] | None: Linha e coluna da peça, ou None se a peça não for encontrada.
+            tuple[int, int] | None: (linha, coluna) ou None se não encontrada.
         """
         for li in range(8):
             for co in range(8):
                 if self.matriz[li, co] == peca:
                     return (li, co)
+        return None
 
 
-    def gerar_mov_peca(self, p) -> None:
+    def gerar_mov_peca(self, p: Peca) -> None:
         """
-        Gera os movimentos possíveis para a peça selecionada.
+        Gera e classifica os movimentos possíveis para a peça selecionada.
 
         Args:
-            p (Peca): Peça selecionada.
-
-        Returns:
-            list[tuple[tuple[int, int], TipoMov]]: Lista de movimentos possíveis com tipo.
+            p (Peca): A peça selecionada para análise de movimentos.
         """
-        origem = self.achar_lc_peca(p)
+        origem = self.achar_lc_peca(peca=p)
         if origem is None:
             self.movimentos_possiveis = []
             self.pseudo_movimentos = []
 
         self.pseudo_movimentos = p.gerar_pseudo_movimentos(lc=origem)
-        self.movimentos_possiveis = self._classificar_movimentos(p, origem, self.pseudo_movimentos)
+        self.movimentos_possiveis = self._classificar_movimentos(peca=p, origem=origem, movimentos=self.pseudo_movimentos)
 
 
     def _classificar_movimentos(
         self,
-        peca,
+        peca: Peca,
         origem: tuple[int, int],
         movimentos: list[tuple[int, int]]
     ) -> list[tuple[tuple[int, int], TipoMov]]:
@@ -124,15 +164,15 @@ class Engine:
 
         Args:
             peca (Peca): A peça que está se movendo.
-            origem (tuple[int, int]): Casa de origem da peça.
-            movimentos (list[tuple[int, int]]): Movimentos pseudo-legais gerados pela peça.
+            origem (tuple[int, int]): Casa de origem.
+            movimentos (list[tuple[int, int]]): Lista de destinos pseudo-legais.
 
         Returns:
-            list[tuple[tuple[int, int], TipoMov]]: Movimentos válidos com tipo.
+            list[tuple[tuple[int, int], TipoMov]]: Destinos validados com seu tipo.
         """
         movs: list[tuple[tuple[int, int], TipoMov]] = []
         for casa in movimentos:
-            tipo = self._validar_movimento(peca, origem, casa)
+            tipo = self._validar_movimento(peca=peca, origem=origem, destino_lc=casa)
             if tipo is not None:
                 movs.append((casa, tipo))
         return movs
@@ -140,20 +180,20 @@ class Engine:
 
     def _validar_movimento(
         self,
-        peca,
+        peca: Peca,
         origem: tuple[int, int],
         destino_lc: tuple[int, int]
     ) -> TipoMov | None:
         """
-        Valida um movimento pseudo-legal e determina o tipo de movimento.
+        Valida logicamente se um movimento pode ser realizado.
 
         Args:
-            peca (Peca): Peça que está se movendo.
-            origem (tuple[int, int]): Casa de origem.
-            destino_lc (tuple[int, int]): Casa de destino.
+            peca (Peca): Peça em movimento.
+            origem (tuple[int, int]): Coordenada de origem.
+            destino_lc (tuple[int, int]): Coordenada de destino.
 
         Returns:
-            TipoMov | None: Tipo de movimento válido ou None se inválido.
+            TipoMov | None: Tipo do movimento se válido, None caso contrário.
         """
         destino = self.matriz[destino_lc[0], destino_lc[1]]
 
@@ -185,7 +225,7 @@ class Engine:
             return None
 
         if isinstance(peca, (Bispo, Dama, Torre)):
-            if not self._caminho_livre(origem, destino_lc):
+            if not self._caminho_livre(origem=origem, destino=destino_lc):
                 return None
 
         if destino is not None:
@@ -198,14 +238,14 @@ class Engine:
 
     def _caminho_livre(self, origem: tuple[int, int], destino: tuple[int, int]) -> bool:
         """
-        Verifica se o caminho entre origem e destino está livre para movimentos deslizantes.
+        Verifica se há obstáculos entre duas casas para peças deslizantes.
 
         Args:
-            origem (tuple[int, int]): Casa de origem.
-            destino (tuple[int, int]): Casa de destino.
+            origem (tuple[int, int]): Casa inicial.
+            destino (tuple[int, int]): Casa final.
 
         Returns:
-            bool: True se não houver peças entre origem e destino.
+            bool: True se o caminho estiver vazio, False caso contrário.
         """
         delta = (destino[0] - origem[0], destino[1] - origem[1])
         passo_l = 0 if delta[0] == 0 else (1 if delta[0] > 0 else -1)
@@ -224,13 +264,13 @@ class Engine:
 
     def achar_lc_rei(self, cor: str) -> tuple[int, int] | None:
         """
-        Encontra a linha e coluna do rei na matriz baseado na cor passada por parâmetro.
+        Localiza a posição do rei de uma determinada cor na matriz.
 
         Args:
-            cor (str): Cor do rei.
+            cor (str): 'w' para branco, 'b' para preto.
 
         Returns:
-            tuple[int, int] | None: Linha e coluna do rei, ou None se o rei nao for encontrado.
+            tuple[int, int] | None: Posição (L, C) do rei.
         """
         cor = cor.lower()
         if cor not in ('b', 'w'):
@@ -245,31 +285,33 @@ class Engine:
 
 
     def verificar_xeque(self, cor: str) -> bool:
+        """
+        Verifica se o rei da cor informada está sob ataque.
+
+        Args:
+            cor (str): Cor do rei a ser verificado.
+
+        Returns:
+            bool: True se estiver em xeque, False caso contrário.
+        """
         cor = cor.lower()
         if cor not in ('b', 'w'):
             raise ValueError('Cor precisa ser "w" ou "b"')
         
-        lc_rei = self.achar_lc_rei(cor)
+        lc_rei = self.achar_lc_rei(cor=cor)
         if lc_rei is None:
             return False
 
         # torre e dama (horizontais)
         direcoes_horizontais = ((0, 1), (0, -1), (1, 0), (-1, 0))
         for direcao in direcoes_horizontais:
-            l = lc_rei[0]
-            c = lc_rei[1]
+            l, c = lc_rei
             while True:
                 l += direcao[0]
                 c += direcao[1]
-
-                if not self.lc_valido(l, c):
-                    break
-                
+                if not self.lc_valido(linha=l, coluna=c): break
                 destino = self.matriz[l, c]
-
-                if destino is None:
-                    continue
-
+                if destino is None: continue
                 if destino.cor != cor and isinstance(destino, (Torre, Dama)):
                     return True
                 break
@@ -277,121 +319,53 @@ class Engine:
         # bispo e dama (diagonais)
         direcoes_diagonais = ((-1, -1), (-1, 1), (1, -1), (1, 1))
         for direcao in direcoes_diagonais:
-            l = lc_rei[0]
-            c = lc_rei[1]
+            l, c = lc_rei
             while True:
                 l += direcao[0]
                 c += direcao[1]
-
-                if not self.lc_valido(l, c):
-                    break
-                
+                if not self.lc_valido(linha=l, coluna=c): break
                 destino = self.matriz[l, c]
-
-                if destino is None:
-                    continue
-
+                if destino is None: continue
                 if destino.cor != cor and isinstance(destino, (Bispo, Dama)):
                     return True
                 break
 
         # cavalo
-        offsets_cavalo = [
-            (-2, -1),
-            (-2, 1),
-            (-1, -2),
-            (-1, 2),
-            (2, -1),
-            (2, 1),
-            (1, -2),
-            (1, 2)
-        ]
-
+        offsets_cavalo = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (2, -1), (2, 1), (1, -2), (1, 2)]
         for offset in offsets_cavalo:
-            l = lc_rei[0]
-            c = lc_rei[1]
-
-            l += offset[0]
-            c += offset[1]
-
-            if not self.lc_valido(l, c):
-                continue
-            
-            destino = self.matriz[l, c]
-
-            if destino is None:
-                continue
-
-            if isinstance(destino, Cavalo) and destino.cor != cor:
-                return True
+            l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
+            if self.lc_valido(linha=l, coluna=c):
+                destino = self.matriz[l, c]
+                if destino and isinstance(destino, Cavalo) and destino.cor != cor:
+                    return True
         
         # rei
-        offsets_rei = [
-            (-1, -1),
-            (-1, 0),
-            (-1, 1),
-            (1, -1),
-            (1, 0),
-            (1, 1),
-            (0, -1),
-            (0, 1)
-        ]
+        offsets_rei = [(-1, -1), (-1, 0), (-1, 1), (1, -1), (1, 0), (1, 1), (0, -1), (0, 1)]
         for offset in offsets_rei:
-            l = lc_rei[0]
-            c = lc_rei[1]
-
-            l += offset[0]
-            c += offset[1]
-
-            if not self.lc_valido(l, c):
-                continue
-            
-            destino = self.matriz[l, c]
-
-            if destino is None:
-                continue
-            
-            if isinstance(destino, Rei) and destino.cor != cor:
-                return True
+            l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
+            if self.lc_valido(linha=l, coluna=c):
+                destino = self.matriz[l, c]
+                if destino and isinstance(destino, Rei) and destino.cor != cor:
+                    return True
         
         # peão
-        if cor == 'w':
-            offsets_peao = [
-                (-1, -1),
-                (-1, 1)
-            ]
-        elif cor == 'b':
-            offsets_peao = [
-                (1, -1),
-                (1, 1)
-            ]
-        
+        direcao = -1 if cor == 'w' else 1
+        offsets_peao = [(direcao, -1), (direcao, 1)]
         for offset in offsets_peao:
-            l = lc_rei[0]
-            c = lc_rei[1]
-
-            l += offset[0]
-            c += offset[1]
-
-            if not self.lc_valido(l, c):
-                continue
-            
-            destino = self.matriz[l, c]
-
-            if destino is None:
-                continue
-            
-            if isinstance(destino, Peao) and destino.cor != cor:
-                return True
+            l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
+            if self.lc_valido(linha=l, coluna=c):
+                destino = self.matriz[l, c]
+                if destino and isinstance(destino, Peao) and destino.cor != cor:
+                    return True
         return False
 
 
     @staticmethod
     def lc_valido(linha: int, coluna: int) -> bool:
         """
-        Verifica se a linha e coluna são válidas.
+        Verifica se a coordenada informada está dentro dos limites do tabuleiro.
 
         Returns:
-            bool: True se a linha e coluna forem validas, False caso contrário.
+            bool: True se válida, False caso contrário.
         """
         return 0 <= linha < 8 and 0 <= coluna < 8
