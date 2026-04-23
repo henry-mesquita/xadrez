@@ -29,6 +29,7 @@ class Renderer:
         """
         self.engine: Engine = engine
         self.inicializar_pg()
+        self._criar_surface_tabuleiro_estatica()
         
         self.peca_arrastada = None
         self.origem_mov = None
@@ -42,7 +43,7 @@ class Renderer:
         Configura o ambiente do Pygame e superfícies de desenho.
         """
         self.tela = pg.display.set_mode(size=TAMANHO_TELA)
-        self.surface_tabuleiro = Surface(size=TAM_TABULEIRO).convert()
+        self.surface_tabuleiro_base = Surface(size=TAM_TABULEIRO).convert()
         self.fonte = pg.font.SysFont(name=None, size=30)
         pg.display.set_caption('Xadrez')
 
@@ -136,41 +137,40 @@ class Renderer:
         """
         Coordena o desenho do tabuleiro, destaques e peças na tela.
         """
-        self.surface_tabuleiro.fill(color=PRETO)
-        self._desenhar_tabuleiro()
-        self._desenhar_movimentos_possiveis()
+        self.tela.blit(source=self.surface_tabuleiro_base, dest=TAB_POS)
+        self._desenhar_movimentos_possiveis(surface=self.tela)
         
         for linha in self.engine.matriz:
             for peca in linha:
                 if peca and peca != self.peca_arrastada:
-                    self.surface_tabuleiro.blit(source=peca.sprite, dest=peca.rect)
+                    self.tela.blit(source=peca.sprite, dest=peca.rect.move(TAB_POS))
         
         if self.peca_arrastada:
-            self.surface_tabuleiro.blit(source=self.peca_arrastada.sprite, dest=self.peca_arrastada.rect)
-            
-        self.tela.blit(source=self.surface_tabuleiro, dest=TAB_POS)
+            self.tela.blit(source=self.peca_arrastada.sprite, dest=self.peca_arrastada.rect.move(TAB_POS))
 
 
-    def _desenhar_tabuleiro(self) -> None:
+    def _criar_surface_tabuleiro_estatica(self) -> None:
         """
-        Desenha o padrão xadrez de casas no tabuleiro.
+        Cria a superfície do tabuleiro com as casas desenhadas uma única vez.
         """
         for l in range(8):
             for c in range(8):
                 cor = COR_CASAS_PARES if (l + c) % 2 == 0 else COR_CASAS_IMPARES
-                pg.draw.rect(surface=self.surface_tabuleiro, color=cor, rect=(c*TAM_CASA, l*TAM_CASA, TAM_CASA, TAM_CASA))
+                pg.draw.rect(surface=self.surface_tabuleiro_base,
+                             color=cor,
+                             rect=(c*TAM_CASA, l*TAM_CASA, TAM_CASA, TAM_CASA))
 
 
-    def _desenhar_movimentos_possiveis(self) -> None:
+    def _desenhar_movimentos_possiveis(self, surface: Surface) -> None:
         """
         Desenha indicadores visuais para movimentos normais e capturas.
         """
         for (l, c), tipo in self.engine.movimentos_possiveis:
-            x, y = c * TAM_CASA, l * TAM_CASA
+            x, y = c * TAM_CASA + TAB_POS[0], l * TAM_CASA + TAB_POS[1]
             if tipo == TipoMov.CAPTURA:
-                pg.draw.rect(surface=self.surface_tabuleiro, color=COR_CASAS_CAPTURA, rect=(x, y, TAM_CASA, TAM_CASA), width=3)
+                pg.draw.rect(surface=surface, color=COR_CASAS_CAPTURA, rect=(x, y, TAM_CASA, TAM_CASA), width=3)
             else:
-                pg.draw.circle(surface=self.surface_tabuleiro, color=COR_CASAS_MOV, center=(x + TAM_CASA//2, y + TAM_CASA//2), radius=RAIO_CIRCULO)
+                pg.draw.circle(surface=surface, color=COR_CASAS_MOV, center=(x + TAM_CASA//2, y + TAM_CASA//2), radius=RAIO_CIRCULO)
 
 
     def mostrar_fps(self, fps: float) -> None:
@@ -181,7 +181,7 @@ class Renderer:
             fps (float): Valor do FPS atual.
         """
         txt = self.fonte.render(f"FPS: {int(fps)}", True, COR_TEXTO)
-        self.tela.blit(source=txt, dest=(10, 10))
+        self.tela.blit(source=txt, dest=(10, 50))
 
 
     def mostrar_matriz_no_terminal(self) -> None:
