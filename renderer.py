@@ -203,3 +203,4 @@ class Renderer:
             print(linha_str)
             print("  " + "—" * 33)
         print(f"Turno atual: {'Brancas' if self.engine.turno == 'w' else 'Pretas'}\n")
+    
