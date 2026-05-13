@@ -20,7 +20,7 @@ class Renderer:
     IMG_DIR = BASE_DIR.parent / "img"
 
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(self, engine: Engine, mostrar_turno: bool = False) -> None:
         """
         Inicializa o gerenciador visual do jogo.
 
@@ -30,6 +30,8 @@ class Renderer:
         self.engine: Engine = engine
         self.inicializar_pg()
         self._criar_surface_tabuleiro_estatica()
+
+        self.mostrar_turno: bool = mostrar_turno
         
         self.peca_arrastada = None
         self.origem_mov = None
@@ -140,12 +142,12 @@ class Renderer:
         self.tela.blit(source=self.surface_tabuleiro_base, dest=TAB_POS)
         self._desenhar_turno(surface=self.tela)
         self._desenhar_movimentos_possiveis(surface=self.tela)
-        
+
         for linha in self.engine.matriz:
             for peca in linha:
                 if peca and peca != self.peca_arrastada:
                     self.tela.blit(source=peca.sprite, dest=peca.rect.move(TAB_POS))
-        
+
         if self.peca_arrastada:
             self.tela.blit(source=self.peca_arrastada.sprite, dest=self.peca_arrastada.rect.move(TAB_POS))
 
@@ -158,7 +160,10 @@ class Renderer:
             surface (Surface): Superficie a ser desenhada.
         """
         turno = 'Brancas' if self.engine.turno == 'w' else 'Pretas'
-        surface.blit(self.fonte.render(f'Vez das\n{turno}', False, (130, 130, 130)), (TAM_TABULEIRO[0] + 10, TAMANHO_TELA[1] // 2))
+        surface.blit(self.fonte.render(f'Vez das\n{turno}',
+                                       False,
+                                       (130, 130, 130)),
+                                       (TAM_TABULEIRO[0] + 10, TAMANHO_TELA[1] // 2 - 20))
 
 
     def _criar_surface_tabuleiro_estatica(self) -> None:

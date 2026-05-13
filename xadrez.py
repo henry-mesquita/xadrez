@@ -12,8 +12,8 @@ class Xadrez:
         """
         Inicializa o núcleo do jogo, instanciando engine e renderer.
         """
-        self.clock = pg.time.Clock()
         pg.init()
+        self.clock = pg.time.Clock()
         self.engine = Engine()
         self.renderer = Renderer(engine=self.engine)
         self.running = True
