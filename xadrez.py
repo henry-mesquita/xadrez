@@ -46,10 +46,10 @@ class Xadrez:
         """
         Captura e encaminha eventos do sistema e entrada do usuário.
         """
+        self.renderer.tela.fill(COR_FUNDO)
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
-
 
             movimento, peca_movida = self.renderer.handle_drag_n_drop(event=event)
 

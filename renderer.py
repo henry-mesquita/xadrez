@@ -131,13 +131,14 @@ class Renderer:
                 return mov, p_temp
         
         return None, None
-
+    
 
     def draw(self) -> None:
         """
         Coordena o desenho do tabuleiro, destaques e peças na tela.
         """
         self.tela.blit(source=self.surface_tabuleiro_base, dest=TAB_POS)
+        self._desenhar_turno(surface=self.tela)
         self._desenhar_movimentos_possiveis(surface=self.tela)
         
         for linha in self.engine.matriz:
@@ -147,6 +148,17 @@ class Renderer:
         
         if self.peca_arrastada:
             self.tela.blit(source=self.peca_arrastada.sprite, dest=self.peca_arrastada.rect.move(TAB_POS))
+
+
+    def _desenhar_turno(self, surface: Surface) -> None:
+        """
+        Desenha o turno no canto inferior direito da tela.
+
+        Args:
+            surface (Surface): Superficie a ser desenhada.
+        """
+        turno = 'Brancas' if self.engine.turno == 'w' else 'Pretas'
+        surface.blit(self.fonte.render(f'Vez das\n{turno}', False, (130, 130, 130)), (TAM_TABULEIRO[0] + 10, TAMANHO_TELA[1] // 2))
 
 
     def _criar_surface_tabuleiro_estatica(self) -> None:

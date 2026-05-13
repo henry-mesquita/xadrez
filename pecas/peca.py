@@ -1,9 +1,12 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 class TipoMov(Enum):
-    NORMAL = 0
-    CAPTURA = 1
+    NORMAL          = auto()
+    CAPTURA         = auto()
+
+    ROQUE_PEQUENO   = auto()
+    ROQUE_GRANDE    = auto()
 
 
 class Peca:
