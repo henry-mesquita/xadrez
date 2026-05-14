@@ -28,7 +28,7 @@ class Renderer:
             engine (Engine): Instância da engine lógica.
         """
         self.engine: Engine = engine
-        self.inicializar_pg()
+        self._inicializar_pg()
         self._criar_surface_tabuleiro_estatica()
 
         self.mostrar_turno: bool = mostrar_turno
@@ -40,7 +40,7 @@ class Renderer:
         self.inicializar_sprites_tabuleiro()
 
 
-    def inicializar_pg(self) -> None:
+    def _inicializar_pg(self) -> None:
         """
         Configura o ambiente do Pygame e superfícies de desenho.
         """
@@ -56,7 +56,7 @@ class Renderer:
         """
         for linha in self.engine.matriz:
             for peca in linha:
-                if peca:
+                if peca is not None:
                     self.carregar_sprite_peca(peca=peca)
 
 
@@ -70,6 +70,7 @@ class Renderer:
         chave = f"{peca.cor}{peca.tipo}"
         path = self.IMG_DIR / self.MAPA_SPRITES[chave]
         peca.sprite = pg.transform.scale(pg.image.load(path), (TAMANHO_PECA, TAMANHO_PECA))
+
         self.sincronizar_peca_ao_tabuleiro(peca=peca)
 
 
@@ -142,14 +143,29 @@ class Renderer:
         self.tela.blit(source=self.surface_tabuleiro_base, dest=TAB_POS)
         self._desenhar_turno(surface=self.tela)
         self._desenhar_movimentos_possiveis(surface=self.tela)
+        self._desenhar_pecas(surface=self.tela)
 
+
+    def _desenhar_pecas(self, surface: Surface) -> None:
+        """
+        Desenha as peças na tela.
+
+        Args:
+            surface (Surface): Superficie a ser desenhada.
+        """
         for linha in self.engine.matriz:
             for peca in linha:
                 if peca and peca != self.peca_arrastada:
-                    self.tela.blit(source=peca.sprite, dest=peca.rect.move(TAB_POS))
+                    self.tela.blit(
+                        source=peca.sprite,
+                        dest=peca.rect.move(TAB_POS)
+                    )
 
         if self.peca_arrastada:
-            self.tela.blit(source=self.peca_arrastada.sprite, dest=self.peca_arrastada.rect.move(TAB_POS))
+            surface.blit(
+                source=self.peca_arrastada.sprite,
+                dest=self.peca_arrastada.rect.move(TAB_POS)
+            )
 
 
     def _desenhar_turno(self, surface: Surface) -> None:
@@ -161,7 +177,7 @@ class Renderer:
         """
         turno = 'Brancas' if self.engine.turno == 'w' else 'Pretas'
         surface.blit(self.fonte.render(f'Vez das\n{turno}',
-                                       False,
+                                       True,
                                        (130, 130, 130)),
                                        (TAM_TABULEIRO[0] + 10, TAMANHO_TELA[1] // 2 - 20))
 
@@ -198,7 +214,7 @@ class Renderer:
             fps (float): Valor do FPS atual.
         """
         txt = self.fonte.render(f"FPS: {int(fps)}", True, COR_TEXTO)
-        self.tela.blit(source=txt, dest=(10, 50))
+        self.tela.blit(source=txt, dest=(TAM_TABULEIRO[0] + 10, 10))
 
 
     def mostrar_matriz_no_terminal(self) -> None:
@@ -219,5 +235,6 @@ class Renderer:
                 linha_str += f" {char} |"
             print(linha_str)
             print("  " + "—" * 33)
+
         print(f"Turno atual: {'Brancas' if self.engine.turno == 'w' else 'Pretas'}\n")
     

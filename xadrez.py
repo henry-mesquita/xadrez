@@ -5,6 +5,7 @@ from engine import Engine
 
 
 # TODO: Mudar os sprites das peças para 110x110
+# TODO: Adicionar en passant
 
 
 class Xadrez:

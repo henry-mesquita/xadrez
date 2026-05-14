@@ -5,7 +5,7 @@ def main() -> None:
     Ponto de entrada do programa. Instancia e inicia o jogo.
     """
     jogo = Xadrez()
-    jogo.run(debug=False)
+    jogo.run(debug=True)
 
 
 if __name__ == '__main__':
