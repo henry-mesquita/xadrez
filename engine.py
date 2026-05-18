@@ -302,21 +302,34 @@ class Engine:
         if lc_rei is None:
             return False
 
-        # torre e dama (horizontais)
+        horizontais =   self._verificar_horizontais(lc_rei=lc_rei, cor=cor)
+        diagonais   =   self._verificar_diagonais(lc_rei=lc_rei, cor=cor)
+        cavalo      =   self._verificar_cavalo(lc_rei=lc_rei, cor=cor)
+        rei         =   self._verificar_rei(lc_rei=lc_rei, cor=cor)
+        peao        =   self._verificar_peao(lc_rei=lc_rei, cor=cor)
+
+        return horizontais or diagonais or cavalo or rei or peao
+    
+
+    def _verificar_horizontais(self, lc_rei: tuple[int, int], cor: str) -> bool:
         direcoes_horizontais = ((0, 1), (0, -1), (1, 0), (-1, 0))
         for direcao in direcoes_horizontais:
             l, c = lc_rei
             while True:
                 l += direcao[0]
                 c += direcao[1]
-                if not self.lc_valido(linha=l, coluna=c): break
+                if not self.lc_valido(linha=l, coluna=c):
+                    break
                 destino = self.matriz[l, c]
-                if destino is None: continue
+                if destino is None:
+                    continue
                 if destino.cor != cor and isinstance(destino, (Torre, Dama)):
                     return True
                 break
+        return False
+    
 
-        # bispo e dama (diagonais)
+    def _verificar_diagonais(self, lc_rei: tuple[int, int], cor: str) -> bool:
         direcoes_diagonais = ((-1, -1), (-1, 1), (1, -1), (1, 1))
         for direcao in direcoes_diagonais:
             l, c = lc_rei
@@ -329,8 +342,10 @@ class Engine:
                 if destino.cor != cor and isinstance(destino, (Bispo, Dama)):
                     return True
                 break
+        return False
 
-        # cavalo
+
+    def _verificar_cavalo(self, lc_rei: tuple[int, int], cor: str) -> bool:
         offsets_cavalo = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (2, -1), (2, 1), (1, -2), (1, 2)]
         for offset in offsets_cavalo:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
@@ -338,8 +353,10 @@ class Engine:
                 destino = self.matriz[l, c]
                 if destino and isinstance(destino, Cavalo) and destino.cor != cor:
                     return True
-        
-        # rei
+        return False
+
+
+    def _verificar_rei(self, lc_rei: tuple[int, int], cor: str) -> bool:
         offsets_rei = [(-1, -1), (-1, 0), (-1, 1), (1, -1), (1, 0), (1, 1), (0, -1), (0, 1)]
         for offset in offsets_rei:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
@@ -347,8 +364,10 @@ class Engine:
                 destino = self.matriz[l, c]
                 if destino and isinstance(destino, Rei) and destino.cor != cor:
                     return True
-        
-        # peão
+        return False
+
+
+    def _verificar_peao(self, lc_rei: tuple[int, int], cor: str) -> bool:
         direcao = -1 if cor == 'w' else 1
         offsets_peao = [(direcao, -1), (direcao, 1)]
         for offset in offsets_peao:
