@@ -17,7 +17,7 @@ class Renderer:
     }
 
     BASE_DIR = Path(__file__).resolve()
-    IMG_DIR = BASE_DIR.parent / "img"
+    IMG_DIR = BASE_DIR.parent / "img" / "png"
 
 
     def __init__(self, engine: Engine, mostrar_turno: bool = False) -> None:

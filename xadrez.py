@@ -5,7 +5,6 @@ from engine import Engine
 from pygame import Vector2 as vetor
 
 
-# TODO: Mudar os sprites das peças para 110x110
 # TODO: Adicionar en passant
 
 
@@ -21,7 +20,6 @@ class Xadrez:
         self.running = True
 
         self.debug = False
-
         self.peca_selecionada = None
 
 
@@ -155,7 +153,6 @@ class Xadrez:
                 )
 
         elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
-
             if self.renderer.peca_arrastada:
                 destino = self.renderer.obter_lc_pelo_mouse()
                 origem = self.renderer.origem_mov
@@ -165,7 +162,6 @@ class Xadrez:
                 self.renderer.origem_mov = None
 
                 if destino == origem:
-
                     self.renderer.sincronizar_peca_ao_tabuleiro(
                         peca=peca
                     )
