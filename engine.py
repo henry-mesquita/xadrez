@@ -32,6 +32,12 @@ class Engine:
         self.turno = 'w' # w = branco | b = preto
 
 
+    def validar_movimento(self, mov: Movimento) -> bool:
+        destinos_validos = [m[0] for m in self.movimentos_possiveis]
+        
+        return mov.destino in destinos_validos
+
+
     def executar_movimento(self, mov: Movimento) -> bool:
         """
         Tenta executar um movimento na matriz. 
@@ -42,11 +48,6 @@ class Engine:
         Returns:
             bool: True se o movimento foi bem sucedido, False caso contrário.
         """
-        destinos_validos = [m[0] for m in self.movimentos_possiveis]
-        
-        if mov.destino not in destinos_validos:
-            return False
-
         peca = self.matriz[mov.origem[0], mov.origem[1]]
         
         self.matriz[mov.destino[0], mov.destino[1]] = peca

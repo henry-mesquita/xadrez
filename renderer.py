@@ -95,45 +95,6 @@ class Renderer:
         """
         mx, my = pg.mouse.get_pos()
         return my // TAM_CASA, mx // TAM_CASA
-
-
-    def handle_drag_n_drop(self, event: pg.Event) -> tuple:
-        """
-        Processa eventos de mouse para arrastar e soltar peças.
-
-        Args:
-            event (pg.Event): Evento do Pygame a ser processado.
-
-        Returns:
-            tuple: (Movimento ou None, Peca ou None).
-        """
-        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-            l, c = self.obter_lc_pelo_mouse()
-            if self.engine.lc_valido(linha=l, coluna=c):
-                p = self.engine.matriz[l, c]
-                if p and p.cor == self.engine.turno:
-                    self.peca_arrastada = p
-                    self.origem_mov = (l, c)
-                    self.drag_offset = vetor(event.pos) - vetor(p.rect.topleft)
-                    self.engine.gerar_mov_peca(p=p)
-                else:
-                    self.engine.movimentos_possiveis = [] # CRIME DE ARQUITETURA
-
-        elif event.type == pg.MOUSEMOTION and self.peca_arrastada:
-            self.peca_arrastada.rect.topleft = vetor(event.pos) - self.drag_offset
-
-        elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
-            if self.peca_arrastada:
-                destino = self.obter_lc_pelo_mouse()
-                mov = Movimento(origem=self.origem_mov, destino=destino)
-                
-                p_temp = self.peca_arrastada
-                self.peca_arrastada = None
-                self.origem_mov = None
-                
-                return mov, p_temp
-        
-        return None, None
     
 
     def draw(self) -> None:
