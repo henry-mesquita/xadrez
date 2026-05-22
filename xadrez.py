@@ -22,6 +22,8 @@ class Xadrez:
 
         self.debug = False
 
+        self.peca_selecionada = None
+
 
     def run(self, debug: bool) -> None:
         """
@@ -53,7 +55,7 @@ class Xadrez:
             if event.type == pg.QUIT:
                 self.running = False
 
-            movimento, peca_movida = self.handle_drag_n_drop(event=event)
+            movimento, peca_movida = self.handle_input(event=event)
 
             if movimento and peca_movida:
                 self.processar_jogada(mov=movimento, peca=peca_movida)
@@ -82,40 +84,99 @@ class Xadrez:
         self.renderer.sincronizar_peca_ao_tabuleiro(peca=peca)
 
 
-    def handle_drag_n_drop(self, event: pg.Event) -> tuple:
+    def handle_input(self, event: pg.Event) -> tuple:
         """
-        Processa eventos de mouse para arrastar e soltar peças.
+        Captura e encaminha eventos do sistema e entrada do usuário.
+
+        DRAG N DROP + DROP AND DROP
 
         Args:
-            event (pg.Event): Evento do Pygame a ser processado.
+            event (pg.Event): Objeto contendo o evento capturado.
 
         Returns:
-            tuple: (Movimento ou None, Peca ou None).
+            Movimento: Objeto contendo as coordenadas de origem e destino.
         """
         if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             l, c = self.renderer.obter_lc_pelo_mouse()
-            if self.engine.lc_valido(linha=l, coluna=c):
-                p = self.engine.matriz[l, c]
-                if not p or p.cor != self.engine.turno:
-                    self.engine.movimentos_possiveis = []
-                else:
-                    self.renderer.peca_arrastada = p
-                    self.renderer.origem_mov = (l, c)
-                    self.renderer.drag_offset = vetor(event.pos) - vetor(p.rect.topleft)
-                    self.engine.gerar_mov_peca(p=p)
 
-        elif event.type == pg.MOUSEMOTION and self.renderer.peca_arrastada:
-            self.renderer.peca_arrastada.rect.topleft = vetor(event.pos) - self.renderer.drag_offset
+            if not self.engine.lc_valido(l, c):
+                return None, None
+
+            peca = self.engine.matriz[l, c]
+
+            if peca and peca.cor == self.engine.turno:
+                mesma_peca = (
+                    self.peca_selecionada == peca
+                )
+
+                self.peca_selecionada = peca
+                self.origem_selecionada = (l, c)
+
+                self.engine.gerar_mov_peca(peca)
+
+                self.renderer.peca_arrastada = peca
+                self.renderer.origem_mov = (l, c)
+                self.renderer.drag_offset = (
+                    vetor(event.pos) - vetor(peca.rect.topleft)
+                )
+
+                if mesma_peca:
+                    return None, None
+
+                return None, None
+
+            if self.peca_selecionada:
+                mov = Movimento(
+                    origem=self.origem_selecionada,
+                    destino=(l, c)
+                )
+
+                destino_valido = any(
+                    mov.destino == destino
+                    for destino, _ in self.engine.movimentos_possiveis
+                )
+
+                if not destino_valido:
+                    self.peca_selecionada = None
+                    self.origem_selecionada = None
+
+                    self.engine.limpar_movimentos()
+                    return None, None
+
+                return mov, self.peca_selecionada
+
+            self.engine.limpar_movimentos()
+
+        elif event.type == pg.MOUSEMOTION:
+            if self.renderer.peca_arrastada:
+                self.renderer.peca_arrastada.rect.topleft = (
+                    vetor(event.pos)
+                    - self.renderer.drag_offset
+                )
 
         elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
+
             if self.renderer.peca_arrastada:
                 destino = self.renderer.obter_lc_pelo_mouse()
-                mov = Movimento(origem=self.renderer.origem_mov, destino=destino)
-                
-                p_temp = self.renderer.peca_arrastada
+                origem = self.renderer.origem_mov
+                peca = self.renderer.peca_arrastada
+
                 self.renderer.peca_arrastada = None
                 self.renderer.origem_mov = None
-                
-                return mov, p_temp
-        
+
+                if destino == origem:
+
+                    self.renderer.sincronizar_peca_ao_tabuleiro(
+                        peca=peca
+                    )
+
+                    return None, None
+
+                mov = Movimento(
+                    origem=origem,
+                    destino=destino
+                )
+
+                return mov, peca
+
         return None, None

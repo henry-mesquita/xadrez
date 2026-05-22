@@ -151,7 +151,33 @@ class Engine:
             self.pseudo_movimentos = []
 
         self.pseudo_movimentos = p.gerar_pseudo_movimentos(lc=origem)
-        self.movimentos_possiveis = self._classificar_movimentos(peca=p, origem=origem, movimentos=self.pseudo_movimentos)
+        self.movimentos_possiveis = self._classificar_movimentos(
+            peca=p,
+            origem=origem,
+            movimentos=self.pseudo_movimentos
+        )
+    
+
+    def limpar_movimentos(self) -> None:
+        """
+        Limpa os movimentos pseudo-legais e movimentos possíveis.
+        """
+        self.limpar_pseudo_movimentos()
+        self.limpar_movimentos_possiveis()
+    
+
+    def limpar_pseudo_movimentos(self) -> None:
+        """
+        Limpa APENAS os movimentos pseudo-legais.
+        """
+        self.pseudo_movimentos.clear()
+    
+    
+    def limpar_movimentos_possiveis(self) -> None:
+        """
+        Limpa APENAS os movimentos possíveis.
+        """
+        self.movimentos_possiveis.clear()
 
 
     def _classificar_movimentos(

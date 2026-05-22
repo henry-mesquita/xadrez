@@ -162,9 +162,19 @@ class Renderer:
         for (l, c), tipo in self.engine.movimentos_possiveis:
             x, y = c * TAM_CASA + TAB_POS[0], l * TAM_CASA + TAB_POS[1]
             if tipo == TipoMov.CAPTURA:
-                pg.draw.rect(surface=surface, color=COR_CASAS_CAPTURA, rect=(x, y, TAM_CASA, TAM_CASA), width=3)
+                pg.draw.rect(
+                    surface=surface,
+                    color=COR_CASAS_CAPTURA,
+                    rect=(x, y, TAM_CASA, TAM_CASA),
+                    width=3
+                )
             else:
-                pg.draw.circle(surface=surface, color=COR_CASAS_MOV, center=(x + TAM_CASA//2, y + TAM_CASA//2), radius=RAIO_CIRCULO)
+                pg.draw.circle(
+                    surface=surface,
+                    color=COR_CASAS_MOV,
+                    center=(x + TAM_CASA // 2, y + TAM_CASA // 2),
+                    radius=RAIO_CIRCULO
+                )
 
 
     def mostrar_fps(self, fps: float) -> None:
