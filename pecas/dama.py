@@ -3,6 +3,11 @@ from pecas.peca import Peca
 
 
 class Dama(Peca):
+    """
+    Peça de xadrez mais poderosa, combina movimentos de torre e bispo.
+
+    Pode mover-se qualquer número de casas na horizontal, vertical ou diagonal.
+    """
     def __init__(
         self,
         cor: str,
@@ -12,7 +17,10 @@ class Dama(Peca):
         self.tipo = 'q'
 
 
-    def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_pseudo_movimentos(
+        self,
+        lc: tuple[int, int]
+    ) -> list[tuple[int, int]]:
         """
         Gera os movimentos pseudo legais da dama.
 

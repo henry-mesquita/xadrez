@@ -3,6 +3,11 @@ from pecas.peca import Peca
 
 
 class Peao(Peca):
+    """
+    Peça de xadrez que avança uma casa (ou duas no primeiro movimento).
+
+    Captura diagonalmente. Possui movimento e captura diferenciados.
+    """
     def __init__(
         self,
         cor: str,
@@ -12,7 +17,10 @@ class Peao(Peca):
         self.tipo = 'p'
 
 
-    def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_pseudo_movimentos(
+        self,
+        lc: tuple[int, int]
+    ) -> list[tuple[int, int]]:
         """
         Gera os movimentos pseudo legais caso o tipo da peça seja o peão (p).
 

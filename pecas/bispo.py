@@ -3,6 +3,12 @@ from pecas.peca import Peca
 
 
 class Bispo(Peca):
+    """
+    Peça de xadrez que se move diagonalmente.
+
+    Pode mover-se qualquer número de casas na diagonal enquanto o caminho
+    estiver desobstruído.
+    """
     def __init__(
         self,
         cor: str,
@@ -12,7 +18,10 @@ class Bispo(Peca):
         self.tipo = 'b'
 
 
-    def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_pseudo_movimentos(
+        self,
+        lc: tuple[int, int]
+    ) -> list[tuple[int, int]]:
         """
         Gera os movimentos pseudo legais do bispo.
 

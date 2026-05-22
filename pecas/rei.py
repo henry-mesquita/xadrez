@@ -3,6 +3,11 @@ from pecas.peca import Peca
 
 
 class Rei(Peca):
+    """
+    Peça mais importante do xadrez, move-se uma casa em qualquer direção.
+
+    Seu objetivo é proteger o rei oposto do xeque para vencer a partida.
+    """
     def __init__(
         self,
         cor: str,
@@ -12,7 +17,10 @@ class Rei(Peca):
         self.tipo = 'k'
 
 
-    def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_pseudo_movimentos(
+        self,
+        lc: tuple[int, int]
+    ) -> list[tuple[int, int]]:
         """
         Gera os movimentos pseudo legais para o rei (k).
 

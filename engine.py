@@ -10,6 +10,12 @@ from pecas.torre import Torre
 
 
 class Engine:
+    """
+    Gerenciador de lógica e estado do jogo de xadrez.
+
+    Controla o tabuleiro, valida movimentos, gera movimentos possíveis, gerencia
+    turnos e verifica condições de xeque. Totalmente desacoplada da camada visual.
+    """
     MAPA_PECAS: dict[str, type[Peca]] = {
         'p': Peao,
         'r': Torre,

@@ -3,6 +3,11 @@ from pecas.peca import Peca
 
 
 class Cavalo(Peca):
+    """
+    Peça de xadrez que se move em padrão L (2+1 ou 1+2 casas).
+
+    Realiza saltos e não é bloqueado por outras peças no caminho.
+    """
     def __init__(
         self,
         cor: str,
@@ -12,7 +17,10 @@ class Cavalo(Peca):
         self.tipo = 'n'
 
 
-    def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_pseudo_movimentos(
+        self,
+        lc: tuple[int, int]
+    ) -> list[tuple[int, int]]:
         """
         Gera os movimentos pseudo legais do cavalo.
 

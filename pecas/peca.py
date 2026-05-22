@@ -10,6 +10,12 @@ class TipoMov(Enum):
 
 
 class Peca:
+    """
+    Classe base abstrata para todas as peças de xadrez.
+
+    Define a interface comum e comportamento genérico compartilhado por todas
+    as peças (rei, rainha, torre, bispo, cavalo, peão).
+    """
     def __init__(
         self,
         cor: str,

@@ -9,6 +9,13 @@ from pygame import Vector2 as vetor
 
 
 class Xadrez:
+    """
+    Orquestrador central da aplicação, coordenando engine e renderização.
+
+    Gerencia o loop de eventos, validação de movimentos e sincronização entre
+    a lógica do jogo (Engine) e a apresentação visual (Renderer). Funciona como
+    ponto central de controle da aplicação.
+    """
     def __init__(self) -> None:
         """
         Inicializa o núcleo do jogo, instanciando engine e renderer.

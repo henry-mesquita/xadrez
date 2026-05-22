@@ -7,6 +7,13 @@ from engine import Engine
 
 
 class Renderer:
+    """
+    Gerenciador de renderização visual e apresentação gráfica.
+
+    Abstrai toda a lógica de renderização do Pygame, sincronizando posições visuais
+    com o estado lógico da Engine. Responsável por desenho de sprites, tabuleiro,
+    highlights de movimentos e interações visuais.
+    """
     MAPA_SPRITES = {
         'wk': 'rei_branco.png', 'bk': 'rei_preto.png',
         'wq': 'dama_branca.png', 'bq': 'dama_preta.png',

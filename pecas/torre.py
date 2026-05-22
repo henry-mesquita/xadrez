@@ -3,6 +3,12 @@ from pecas.peca import Peca
 
 
 class Torre(Peca):
+    """
+    Peça de xadrez que se move horizontalmente ou verticalmente.
+
+    Pode mover-se qualquer número de casas enquanto o caminho
+    estiver desobstruído.
+    """
     def __init__(
         self,
         cor: str,
@@ -12,7 +18,10 @@ class Torre(Peca):
         self.tipo = 'r'
 
 
-    def gerar_pseudo_movimentos(self, lc: tuple[int, int]) -> list[tuple[int, int]]:
+    def gerar_pseudo_movimentos(
+        self,
+        lc: tuple[int, int]
+    ) -> list[tuple[int, int]]:
         """
         Gera os movimentos pseudo legais da torre.
 
