@@ -175,10 +175,17 @@ class Renderer:
                     rect=(x, y, TAM_CASA, TAM_CASA),
                     width=3
                 )
-            else:
+            elif tipo == TipoMov.NORMAL:
                 pg.draw.circle(
                     surface=surface,
                     color=COR_CASAS_MOV,
+                    center=(x + TAM_CASA // 2, y + TAM_CASA // 2),
+                    radius=RAIO_CIRCULO
+                )
+            elif tipo in (TipoMov.ROQUE_CURTO, TipoMov.ROQUE_LONGO):
+                pg.draw.circle(
+                    surface=surface,
+                    color=COR_CASAS_ROQUE,
                     center=(x + TAM_CASA // 2, y + TAM_CASA // 2),
                     radius=RAIO_CIRCULO
                 )

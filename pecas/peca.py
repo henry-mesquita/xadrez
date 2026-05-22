@@ -1,12 +1,18 @@
 from enum import Enum, auto
-
+from dataclasses import dataclass
 
 class TipoMov(Enum):
     NORMAL          = auto()
     CAPTURA         = auto()
 
-    ROQUE_PEQUENO   = auto()
-    ROQUE_GRANDE    = auto()
+    ROQUE_CURTO     = auto()
+    ROQUE_LONGO     = auto()
+
+
+@dataclass(frozen=True)
+class Cor:
+    BRANCO = 'w'
+    PRETO = 'b'
 
 
 class Peca:

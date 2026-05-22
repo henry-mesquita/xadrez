@@ -3,7 +3,7 @@ import pygame as pg
 from renderer import Renderer
 from engine import Engine
 from pygame import Vector2 as vetor
-
+from pecas.peca import Cor
 
 # TODO: Adicionar en passant
 
@@ -25,25 +25,21 @@ class Xadrez:
         self.engine = Engine()
         self.renderer = Renderer(engine=self.engine)
         self.running = True
-
-        self.debug = False
         self.peca_selecionada = None
 
 
-    def run(self, debug: bool) -> None:
+    def run(self) -> None:
         """
         Loop principal do jogo.
 
         Args:
             mostrar_fps (bool): Se True, exibe o contador de frames.
         """
-        self.debug = debug
-
         while self.running:
             self.event_loop()
             self.renderer.draw()
             
-            if self.debug:
+            if DEBUG:
                 self.renderer.mostrar_fps(fps=self.clock.get_fps())
 
             pg.display.flip()
@@ -74,19 +70,24 @@ class Xadrez:
             mov (Movimento): Objeto com coordenadas origem e destino.
             peca (object): Instância da peça que foi movida.
         """
-        sucesso = self.engine.validar_movimento(mov=mov)
+        sucesso = self.engine.movimento_possivel(mov=mov)
 
         if sucesso:
             self.engine.executar_movimento(mov=mov)
             self.engine.mudar_turno()
 
-            if self.debug:
+            for linha in self.engine.matriz:
+                for p in linha:
+                    if p:
+                        self.renderer.sincronizar_peca_ao_tabuleiro(peca=p)
+
+            if DEBUG:
                 self.renderer.mostrar_matriz_no_terminal()
                 
-                print(f"Rei branco em xeque: {self.engine.verificar_xeque(cor='w')}")
-                print(f"Rei preto em xeque: {self.engine.verificar_xeque(cor='b')}")
-
-        self.renderer.sincronizar_peca_ao_tabuleiro(peca=peca)
+                print(f"Rei branco em xeque: {self.engine.verificar_xeque(cor=Cor.BRANCO)}")
+                print(f"Rei preto em xeque: {self.engine.verificar_xeque(cor=Cor.PRETO)}")
+        else:
+            self.renderer.sincronizar_peca_ao_tabuleiro(peca=peca)
 
 
     def handle_input(self, event: pg.Event) -> tuple:
