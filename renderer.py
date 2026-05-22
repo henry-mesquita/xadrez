@@ -108,10 +108,14 @@ class Renderer:
         """
         Coordena o desenho do tabuleiro, destaques e peças na tela.
         """
-        self.tela.blit(source=self.surface_tabuleiro_base, dest=TAB_POS)
+        self._desenhar_tabuleiro(surface=self.surface_tabuleiro_base, dest=TAB_POS)
         self._desenhar_turno(surface=self.tela)
         self._desenhar_movimentos_possiveis(surface=self.tela)
         self._desenhar_pecas(surface=self.tela)
+
+
+    def _desenhar_tabuleiro(self, surface: Surface, dest: tuple[int, int]) -> None:
+        self.tela.blit(source=surface, dest=dest)
 
 
     def _desenhar_pecas(self, surface: Surface) -> None:
