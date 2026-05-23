@@ -91,6 +91,15 @@ class Engine:
 
 
     def executar_movimento(self, mov: Movimento, interno: bool=False) -> bool:
+        """
+        Executa um movimento.
+
+        Args:
+            mov (Movimento): Objeto contendo as coordenadas de origem e destino.
+
+        Returns:
+            bool: True se o movimento for valido, False caso contrário.
+        """
         p = self.matriz[mov.origem[0], mov.origem[1]]
 
         if p is None:
@@ -104,6 +113,12 @@ class Engine:
                     return True
                 else:
                     return False
+            if p.cor == Cor.BRANCO:
+                self.roque_curto_branco = False
+                self.roque_longo_branco = False
+            elif p.cor == Cor.PRETO:
+                self.roque_curto_preto = False
+                self.roque_longo_preto = False
         
         if isinstance(p, Peao):
             distancia_l = mov.destino[0] - mov.origem[0]
@@ -135,7 +150,8 @@ class Engine:
                 p.posicao in self.posicao_peao_en_passant
                 and
                 self.en_passant is not None
-                and mov.destino == self.en_passant[0]
+                and
+                mov.destino == self.en_passant[0]
                 ):
                 self.matriz[self.posicao_alvo_en_passant] = None
                 self.en_passant = None

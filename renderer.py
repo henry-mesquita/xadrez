@@ -109,7 +109,8 @@ class Renderer:
         Coordena o desenho do tabuleiro, destaques e peças na tela.
         """
         self._desenhar_tabuleiro(surface=self.surface_tabuleiro_base, dest=TAB_POS)
-        self._desenhar_turno(surface=self.tela)
+        if DEBUG:
+            self._desenhar_turno(surface=self.tela)
         self._desenhar_movimentos_possiveis(surface=self.tela)
         self._desenhar_pecas(surface=self.tela)
 
