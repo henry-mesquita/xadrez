@@ -10,6 +10,7 @@ COR_CASAS_CAPTURA: tuple[int, int, int] = (200, 0, 0)
 COR_CASAS_ROQUE: tuple[int, int, int]   = (0, 190, 0)
 COR_TEXTO: tuple[int, int, int]         = (75, 0, 130)
 COR_FUNDO: tuple[int, int, int]         = (230, 230, 230)
+COR_XEQUE: tuple[int, int, int]         = (190, 0, 0)
 TAM_CASA: int                           = 70
 RAIO_CIRCULO: int                       = int(0.05 * TAM_CASA)
 TAMANHO_TELA: tuple[int, int]           = (TAM_CASA * 8 + 100, TAM_CASA * 8 + 1)

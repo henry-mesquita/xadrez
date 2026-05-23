@@ -70,6 +70,10 @@ class Engine:
         self.carregar_posicao_fen(fen=FEN_INICIAL)
         self.turno = 'w' # w = branco | b = preto
 
+        self.en_passant: None | list[tuple[int, int], TipoMov] = None
+        self.posicao_peao_en_passant: list[tuple[int, int]] = []
+        self.posicao_alvo_en_passant: tuple[int, int] = None
+
 
     def movimento_possivel(self, mov: Movimento) -> bool:
         """
@@ -87,21 +91,64 @@ class Engine:
 
 
     def executar_movimento(self, mov: Movimento, interno: bool=False) -> bool:
-        peca = self.matriz[mov.origem[0], mov.origem[1]]
-        if peca is None: return False
+        p = self.matriz[mov.origem[0], mov.origem[1]]
 
-        if isinstance(peca, Rei) and not interno:
+        if p is None:
+            return False
+
+        if isinstance(p, Rei) and not interno:
             distancia_c = mov.destino[1] - mov.origem[1]
             if abs(distancia_c) == 2:
-                if self.verificar_e_aplicar_roque(peca.cor, distancia_c):
+                if self.verificar_e_aplicar_roque(p.cor, distancia_c):
                     self.limpar_movimentos()
                     return True
                 else:
                     return False
+        
+        if isinstance(p, Peao):
+            distancia_l = mov.destino[0] - mov.origem[0]
+            if abs(distancia_l) == 2:
+                posicao_lado_esquerdo   = mov.destino[0], mov.destino[1] - 1
+                posicao_lado_direito    = mov.destino[0], mov.destino[1] + 1
 
-        self.matriz[mov.destino[0], mov.destino[1]] = peca
+                self.en_passant = [
+                    (
+                        mov.destino[0] - 1 if p.cor == Cor.PRETO else mov.destino[0] + 1,
+                        mov.destino[1]
+                    ),
+                    TipoMov.CAPTURA
+                ]
+                self.posicao_peao_en_passant = []
+                self.posicao_alvo_en_passant = mov.destino
+
+                if self.lc_valido(posicao_lado_esquerdo[0], posicao_lado_esquerdo[1]):
+                    lado_esquerdo = self.matriz[posicao_lado_esquerdo]
+                    if isinstance(lado_esquerdo, Peao) and lado_esquerdo.cor != p.cor:
+                        self.posicao_peao_en_passant.append(posicao_lado_esquerdo)
+
+                if self.lc_valido(posicao_lado_direito[0], posicao_lado_direito[1]):
+                    lado_direito = self.matriz[posicao_lado_direito]
+                    if isinstance(lado_direito, Peao) and lado_direito.cor != p.cor:
+                        self.posicao_peao_en_passant.append(posicao_lado_direito)
+
+            if (
+                p.posicao in self.posicao_peao_en_passant
+                and
+                self.en_passant is not None
+                and mov.destino == self.en_passant[0]
+                ):
+                self.matriz[self.posicao_alvo_en_passant] = None
+                self.en_passant = None
+                self.posicao_alvo_en_passant = None
+                self.posicao_peao_en_passant = []
+            elif abs(distancia_l) != 2:
+                self.en_passant = None
+                self.posicao_peao_en_passant = []
+                self.posicao_alvo_en_passant = None
+
+        self.matriz[mov.destino[0], mov.destino[1]] = p
         self.matriz[mov.origem[0], mov.origem[1]] = None
-        peca.posicao = mov.destino
+        p.posicao = mov.destino
 
         if not interno:
             self.limpar_movimentos()
@@ -428,9 +475,18 @@ class Engine:
 
         if isinstance(p, Rei):
             self._adicionar_roques(self.turno, self.movimentos_possiveis)
+        
+        if isinstance(p, Peao):
+            if p.posicao in self.posicao_peao_en_passant:
+                self._adicionar_en_passant(self.movimentos_possiveis)
 
-        if DEBUG:
-            print(self.movimentos_possiveis)
+        # if DEBUG:
+        #     print(self.movimentos_possiveis)
+
+
+    def _adicionar_en_passant(self, mov: list) -> None:
+        mov.append(self.en_passant)
+        # self.en_passant = None
 
 
     def _adicionar_roques(
@@ -772,4 +828,4 @@ class Engine:
         Returns:
             bool: True se válida, False caso contrário.
         """
-        return 0 <= linha < 8 and 0 <= coluna < 8
+        return 0 <= linha < 8 and 0 <= coluna < 8 

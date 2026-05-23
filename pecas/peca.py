@@ -4,9 +4,9 @@ from dataclasses import dataclass
 class TipoMov(Enum):
     NORMAL          = auto()
     CAPTURA         = auto()
-
     ROQUE_CURTO     = auto()
     ROQUE_LONGO     = auto()
+    EN_PASSANT      = auto()
 
 
 @dataclass(frozen=True)
@@ -45,12 +45,12 @@ class Peca:
 
     def __str__(self) -> str:
         """Retorna uma representação de string da peça."""
-        return f'Cor: {self.cor}'
+        return f'Tipo: {self.__class__.__name__} | Cor: {self.cor} | Posição: {self.posicao}'
     
 
     def __repr__(self) -> str:
         """Retorna uma representação de depuração da peça."""
-        return f"{self.cor})"
+        return f"Tipo: {self.__class__.__name__} | Cor: {self.cor} | Posição: {self.posicao})"
 
 
     @staticmethod
