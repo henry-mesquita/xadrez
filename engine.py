@@ -507,13 +507,13 @@ class Engine:
         """
         movs: list[tuple[tuple[int, int], TipoMov]] = []
         for casa in movimentos:
-            tipo = self._validar_movimento(peca=peca, origem=origem, destino_lc=casa)
+            tipo = self._classificar_movimento(peca=peca, origem=origem, destino_lc=casa)
             if tipo is not None:
                 movs.append((casa, tipo))
         return movs
 
 
-    def _validar_movimento(
+    def _classificar_movimento(
         self,
         peca: Peca,
         origem: tuple[int, int],
