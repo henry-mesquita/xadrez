@@ -104,6 +104,19 @@ class Engine:
 
         if p is None:
             return False
+        
+        if isinstance(p, Torre):
+            if p.cor == Cor.BRANCO:
+                if mov.origem[1] == 0:
+                    self.roque_longo_branco = False
+                elif mov.origem[1] == 7:
+                    self.roque_curto_branco = False
+            elif p.cor == Cor.PRETO:
+                if mov.origem[1] == 0:
+                    self.roque_longo_preto = False
+                elif mov.origem[1] == 7:
+                    self.roque_curto_preto = False
+
 
         if isinstance(p, Rei) and not interno:
             distancia_c = mov.destino[1] - mov.origem[1]
