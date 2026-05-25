@@ -15,7 +15,8 @@ class Torre(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo = 'r'
+        self.tipo: str      = 'r'
+        self.pontuacao: int = 5
 
 
     def gerar_pseudo_movimentos(

@@ -15,7 +15,8 @@ class Bispo(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo = 'b'
+        self.tipo: str = 'b'
+        self.pontuacao: int = 3
 
 
     def gerar_pseudo_movimentos(

@@ -56,10 +56,11 @@ class Xadrez:
             if event.type == pg.QUIT:
                 self.running = False
 
-            movimento, peca_movida = self.handle_input(event=event)
+            if not self.engine.finalizado:
+                movimento, peca_movida = self.handle_input(event=event)
 
-            if movimento and peca_movida:
-                self.processar_jogada(mov=movimento, peca=peca_movida)
+                if movimento and peca_movida:
+                    self.processar_jogada(mov=movimento, peca=peca_movida)
 
 
     def processar_jogada(self, mov: Movimento, peca: object) -> None:

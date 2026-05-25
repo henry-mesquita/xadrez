@@ -14,7 +14,8 @@ class Peao(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo = 'p'
+        self.tipo: str = 'p'
+        self.pontuacao: int  = 1
 
 
     def gerar_pseudo_movimentos(

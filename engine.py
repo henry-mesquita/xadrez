@@ -67,7 +67,7 @@ class Engine:
         self.roque_curto_preto:     bool = True
         self.roque_longo_preto:     bool = True
 
-        self.carregar_posicao_fen(fen=FEN_INICIAL)
+        self.carregar_posicao_fen(fen='FEN_INICIAL')
         self.turno = 'w' # w = branco | b = preto
 
         self.en_passant: None | list[tuple[int, int], TipoMov] = None
@@ -92,6 +92,41 @@ class Engine:
         destinos_validos = [m[0] for m in self.movimentos_possiveis]
         
         return mov.destino in destinos_validos
+
+
+    def _verificar_insuficiencia_material(self) -> bool:
+        """
+        Verifica se restam peças suficientes para aplicar um xeque-mate.
+        Regras básicas da FIDE:
+        1. Rei vs Rei
+        2. Rei e Bispo vs Rei
+        3. Rei e Cavalo vs Rei
+        4. Rei e Bispo vs Rei e Bispo (mesma cor de casa) - Opcional, mas recomendado.
+        """
+        pecas_vivas: list[Peca] = []
+        for li in range(8):
+            for co in range(8):
+                p = self.matriz[li, co]
+                if p is not None and not isinstance(p, Rei):
+                    pecas_vivas.append(p)
+
+        if len(pecas_vivas) == 0:
+            return True
+
+        if len(pecas_vivas) == 1:
+            p = pecas_vivas[0]
+            if isinstance(p, (Bispo, Cavalo)):
+                return True
+
+        if len(pecas_vivas) == 2:
+            p1, p2 = pecas_vivas[0], pecas_vivas[1]
+            if isinstance(p1, Bispo) and isinstance(p2, Bispo):
+                pos1 = self.achar_lc_peca(p1)
+                pos2 = self.achar_lc_peca(p2)
+                if (pos1[0] + pos1[1]) % 2 == (pos2[0] + pos2[1]) % 2:
+                    return True
+
+        return False
 
 
     def executar_movimento(self, mov: Movimento, interno: bool=False) -> bool:
@@ -188,7 +223,7 @@ class Engine:
         
 
         self.mudar_turno()
-        self._verificar_xeque_mate(self.turno)
+        self._verificar_fim_de_jogo(self.turno)
 
         return True
 
@@ -225,28 +260,59 @@ class Engine:
                             return True
                             
         return False
+    
 
-
-    def _verificar_xeque_mate(self, cor: str) -> None:
+    def _contagem_material(self) -> dict:
         """
-        Verifica se a partida acabou por Xeque-mate ou Afogamento.
+        Conta a quantidade de peças de cada cor.
 
-        Args:
-            cor (str): Cor do jogador.
+        Returns:
+            dict: Dicionário com a contagem de peças de cada cor.
         """
-        if not self._tem_movimentos_legais(cor):
-            if self.verificar_xeque(cor):
-                if cor == Cor.BRANCO:
+        brancas = 0
+        pretas = 0
+        for li in range(8):
+            for co in range(8):
+                p = self.matriz[li, co]
+                if p is not None:
+                    if p.cor == Cor.BRANCO:
+                        brancas += p.pontuacao
+                    else:
+                        pretas += p.pontuacao
+        return {
+            Cor.BRANCO: brancas,
+            Cor.PRETO: pretas
+        }
+
+
+    @property
+    def finalizado(self) -> bool:
+        """Retorna True se o jogo acabou (Vitória ou Empate)."""
+        return self.vitoria_brancas or self.vitoria_negras or self.empate
+
+
+    def _verificar_fim_de_jogo(self, cor_atual: str) -> None:
+        """
+        Agrega todas as checagens de fim de partida.
+        """
+        if not self._tem_movimentos_legais(cor_atual):
+            if self.verificar_xeque(cor_atual):
+                if cor_atual == Cor.BRANCO:
                     self.vitoria_negras = True
                 else:
                     self.vitoria_brancas = True
-                print(f"Xeque-Mate! Vitória das {'Pretas' if cor == Cor.BRANCO else 'Brancas'}.")
+                print(f"Xeque-Mate! Vitória das {'Pretas' if cor_atual == Cor.BRANCO else 'Brancas'}.")
             else:
                 self.empate = True
-                print("Empate por afogamento.")
+                print("Empate por afogamento (Stalemate).")
+            return
+
+        if self._verificar_insuficiencia_material():
+            self.empate = True
+            print("Empate por insuficiência de material.")
 
 
-    def verificar_e_aplicar_roque(self, cor, distancia_c) -> bool:
+    def verificar_e_aplicar_roque(self, cor: Cor, distancia_c: int) -> bool:
         """ 
         Retorna True se o roque foi aplicado com sucesso.
 

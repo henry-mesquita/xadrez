@@ -14,7 +14,8 @@ class Dama(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo = 'q'
+        self.tipo: str          = 'q'
+        self.pontuacao: int     = 0
 
 
     def gerar_pseudo_movimentos(

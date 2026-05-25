@@ -14,7 +14,8 @@ class Cavalo(Peca):
         posicao: tuple[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo = 'n'
+        self.tipo: str       = 'n'
+        self.pontuacao: int  = 3
 
 
     def gerar_pseudo_movimentos(
