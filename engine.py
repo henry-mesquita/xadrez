@@ -67,7 +67,7 @@ class Engine:
         self.roque_curto_preto:     bool = True
         self.roque_longo_preto:     bool = True
 
-        self.carregar_posicao_fen(fen='FEN_INICIAL')
+        self.carregar_posicao_fen(fen=FEN_INICIAL)
         self.turno = 'w' # w = branco | b = preto
 
         self.en_passant: None | list[tuple[int, int], TipoMov] = None
@@ -221,7 +221,6 @@ class Engine:
         if not interno:
             self.limpar_movimentos()
         
-
         self.mudar_turno()
         self._verificar_fim_de_jogo(self.turno)
 
@@ -543,16 +542,20 @@ class Engine:
 
     def carregar_posicao_fen(self, fen: str) -> None:
         """
-        Carrega uma posição no padrão FEN para a matriz do tabuleiro.
-
-        Args:
-            fen (str): String no formato FEN.
+        Carrega uma posição completa no padrão FEN, atualizando o tabuleiro,
+        turno, direitos de roque e estado de en passant.
         """
-        placement = fen.strip().split()[0]
-        ranks = placement.split('/')
+        partes = fen.strip().split()
+        if len(partes) < 4:
+            raise ValueError("FEN inválida: deve conter pelo menos os 4 campos iniciais.")
 
+        tabuleiro_str, turno, roques, ep_square = partes[:4]
+
+        self.matriz.fill(None)
+
+        ranks = tabuleiro_str.split('/')
         if len(ranks) != 8:
-            raise ValueError("FEN inválida: deve ter 8 ranks no piece placement.")
+            raise ValueError("FEN inválida: piece placement deve ter 8 ranks.")
 
         for i, rank in enumerate(ranks):
             j = 0
@@ -562,18 +565,36 @@ class Engine:
                 else:
                     cor = 'w' if ch.isupper() else 'b'
                     tipo = ch.lower()
-
-                    if tipo not in ('p', 'r', 'n', 'b', 'q', 'k'):
-                        raise ValueError(f"FEN inválida: peça desconhecida '{ch}'.")
-
-                    if j >= 8:
-                        raise ValueError("FEN inválida: rank excede 8 colunas.")
-
                     self.matriz[i, j] = self.criar_peca(tipo=tipo, cor=cor, pos=[i, j])
                     j += 1
 
-            if j != 8:
-                raise ValueError("FEN inválida: rank não fecha em 8 colunas.")
+        self.turno = turno
+
+        self.roque_curto_branco = 'K' in roques
+        self.roque_longo_branco = 'Q' in roques
+        self.roque_curto_preto  = 'k' in roques
+        self.roque_longo_preto  = 'q' in roques
+
+        self.en_passant = None
+        self.posicao_alvo_en_passant = None
+        self.posicao_peao_en_passant = []
+
+        if ep_square != '-':
+            coluna_ep = ord(ep_square[0]) - ord('a')
+            linha_ep = 8 - int(ep_square[1])
+            
+            self.en_passant = [(linha_ep, coluna_ep), TipoMov.CAPTURA]
+            
+            direcao = 1 if linha_ep == 2 else -1
+            self.posicao_alvo_en_passant = (linha_ep + direcao, coluna_ep)
+
+            for dc in [-1, 1]:
+                c_vizinho = coluna_ep + dc
+                l_vizinho = linha_ep + direcao
+                if self.lc_valido(l_vizinho, c_vizinho):
+                    p = self.matriz[l_vizinho, c_vizinho]
+                    if isinstance(p, Peao) and p.cor != self.matriz[self.posicao_alvo_en_passant].cor:
+                        self.posicao_peao_en_passant.append((l_vizinho, c_vizinho))
 
 
     def criar_peca(self, tipo: str, cor: str, pos: list[int]) -> Peca:
