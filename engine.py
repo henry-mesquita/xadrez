@@ -484,38 +484,83 @@ class Engine:
 
 
     def gerar_mov_peca(self, p: Peca) -> None:
-        """
-        Gera e classifica os movimentos possíveis para a peça selecionada.
-
-        Args:
-            p (Peca): A peça selecionada para análise de movimentos.
-        """
         origem = self.achar_lc_peca(peca=p)
         if origem is None:
             self.movimentos_possiveis = []
             self.pseudo_movimentos = []
+            return
 
         self.pseudo_movimentos = p.gerar_pseudo_movimentos(lc=origem)
-        self.movimentos_possiveis = self._classificar_movimentos(
+        
+        candidatos = self._classificar_movimentos(
             peca=p,
             origem=origem,
             movimentos=self.pseudo_movimentos
         )
 
         if isinstance(p, Rei):
-            self._adicionar_roques(self.turno, self.movimentos_possiveis)
+            self._adicionar_roques(self.turno, candidatos)
         
         if isinstance(p, Peao):
             if p.posicao in self.posicao_peao_en_passant:
-                self._adicionar_en_passant(self.movimentos_possiveis)
+                self._adicionar_en_passant(candidatos)
+        
+        movimentos_validos = []
+        for destino, tipo in candidatos:
+            if self._testar_movimento(destino, tipo, origem, self.turno):
+                movimentos_validos.append((destino, tipo))
+        
+        self.movimentos_possiveis = movimentos_validos
 
         # if DEBUG:
         #     print(self.movimentos_possiveis)
 
 
+    def _testar_movimento(
+        self,
+        mov_destino: tuple[int, int],
+        tipo: TipoMov,
+        origem: tuple[int, int],
+        cor: str
+    ) -> bool:
+        """
+        Simula um movimento para verificar se ele resultaria no próprio rei em xeque.
+        """
+        backup_destino = self.matriz[mov_destino[0], mov_destino[1]]
+        peca_movendo = self.matriz[origem[0], origem[1]]
+        
+        backup_en_passant_peao = None
+        pos_peao_en_passant = None
+        
+        is_en_passant = (
+            isinstance(peca_movendo, Peao)
+            and
+            tipo == TipoMov.CAPTURA
+            and
+            backup_destino is None
+        )
+
+        if is_en_passant:
+            pos_peao_en_passant = self.posicao_alvo_en_passant
+            backup_en_passant_peao = self.matriz[pos_peao_en_passant]
+            self.matriz[pos_peao_en_passant] = None
+
+        self.matriz[mov_destino[0], mov_destino[1]] = peca_movendo
+        self.matriz[origem[0], origem[1]] = None
+
+        em_xeque = self.verificar_xeque(cor)
+
+        self.matriz[origem[0], origem[1]] = peca_movendo
+        self.matriz[mov_destino[0], mov_destino[1]] = backup_destino
+        
+        if is_en_passant:
+            self.matriz[pos_peao_en_passant] = backup_en_passant_peao
+
+        return not em_xeque
+
+
     def _adicionar_en_passant(self, mov: list) -> None:
         mov.append(self.en_passant)
-        # self.en_passant = None
 
 
     def _adicionar_roques(
