@@ -74,6 +74,10 @@ class Engine:
         self.posicao_peao_en_passant: list[tuple[int, int]] = []
         self.posicao_alvo_en_passant: tuple[int, int] = None
 
+        self.vitoria_negras:    bool = False
+        self.vitoria_brancas:   bool = False
+        self.empate:            bool = False
+
 
     def movimento_possivel(self, mov: Movimento) -> bool:
         """
@@ -181,7 +185,65 @@ class Engine:
 
         if not interno:
             self.limpar_movimentos()
+        
+
+        self.mudar_turno()
+        self._verificar_xeque_mate(self.turno)
+
         return True
+
+
+    def _cor_oposta(self, cor: Cor) -> Cor:
+        return Cor.PRETO if cor == Cor.BRANCO else Cor.BRANCO
+
+
+    def _tem_movimentos_legais(self, cor: str) -> bool:
+        """
+        Verifica se o jogador da cor atual possui pelo menos um movimento legal.
+        Usa a estratégia de saída antecipada para performance.
+
+        Args:
+            cor (str): Cor do jogador.
+
+        Returns:
+            bool: True se o jogador possui pelo menos um movimento legal, False caso contrário.
+        """
+        for li in range(8):
+            for co in range(8):
+                p = self.matriz[li, co]
+                if p is not None and p.cor == cor:
+                    pseudo = p.gerar_pseudo_movimentos(lc=(li, co))
+                    candidatos = self._classificar_movimentos(p, (li, co), pseudo)
+                    
+                    if isinstance(p, Rei):
+                        self._adicionar_roques(cor, candidatos)
+                    if isinstance(p, Peao) and p.posicao in self.posicao_peao_en_passant:
+                        self._adicionar_en_passant(candidatos)
+                    
+                    for destino, tipo in candidatos:
+                        if self._testar_movimento(destino, tipo, (li, co), cor):
+                            return True
+                            
+        return False
+
+
+    def _verificar_xeque_mate(self, cor: str) -> None:
+        """
+        Verifica se a partida acabou por Xeque-mate ou Afogamento.
+
+        Args:
+            cor (str): Cor do jogador.
+        """
+        if not self._tem_movimentos_legais(cor):
+            if self.verificar_xeque(cor):
+                if cor == Cor.BRANCO:
+                    self.vitoria_negras = True
+                else:
+                    self.vitoria_brancas = True
+                print(f"Xeque-Mate! Vitória das {'Pretas' if cor == Cor.BRANCO else 'Brancas'}.")
+            else:
+                self.empate = True
+                print("Empate por afogamento.")
 
 
     def verificar_e_aplicar_roque(self, cor, distancia_c) -> bool:

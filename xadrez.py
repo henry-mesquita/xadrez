@@ -74,7 +74,6 @@ class Xadrez:
 
         if sucesso:
             self.engine.executar_movimento(mov=mov)
-            self.engine.mudar_turno()
 
             for linha in self.engine.matriz:
                 for p in linha:
