@@ -5,6 +5,9 @@ from pygame import Vector2 as vetor, Surface
 from pathlib import Path
 from engine import Engine
 
+# TODO: Promoção de peão
+# TODO: Regra dos 30 lances
+
 
 class Renderer:
     """
@@ -76,7 +79,10 @@ class Renderer:
         """
         chave = f"{peca.cor}{peca.tipo}"
         path = self.IMG_DIR / self.MAPA_SPRITES[chave]
-        peca.sprite = pg.transform.scale(pg.image.load(path), (TAMANHO_PECA, TAMANHO_PECA))
+        peca.sprite = pg.transform.scale(
+            pg.image.load(path).convert_alpha(),
+            (TAMANHO_PECA, TAMANHO_PECA)
+        )
 
         self.sincronizar_peca_ao_tabuleiro(peca=peca)
 
@@ -101,7 +107,9 @@ class Renderer:
             tuple[int, int]: (linha, coluna).
         """
         mx, my = pg.mouse.get_pos()
-        return my // TAM_CASA, mx // TAM_CASA
+        lx = (mx - TAB_POS[0]) // TAM_CASA
+        ly = (my - TAB_POS[1]) // TAM_CASA
+        return ly, lx
     
 
     def draw(self) -> None:

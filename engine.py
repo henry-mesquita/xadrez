@@ -68,7 +68,7 @@ class Engine:
         self.roque_longo_preto:     bool = True
 
         self.carregar_posicao_fen(fen=FEN_INICIAL)
-        self.turno = 'w' # w = branco | b = preto
+        self.turno = Cor.BRANCO
 
         self.en_passant: None | list[tuple[int, int], TipoMov] = None
         self.posicao_peao_en_passant: list[tuple[int, int]] = []
