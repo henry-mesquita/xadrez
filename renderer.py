@@ -1,6 +1,6 @@
 from constantes import *
 import pygame as pg
-from pecas.peca import TipoMov
+from pecas.peca import TipoMov, Cor, Peca
 from pygame import Vector2 as vetor, Surface
 from pathlib import Path
 from engine import Engine
@@ -30,7 +30,7 @@ class Renderer:
     IMG_DIR = BASE_DIR.parent / "img" / "png"
 
 
-    def __init__(self, engine: Engine, mostrar_turno: bool = False) -> None:
+    def __init__(self, engine: Engine) -> None:
         """
         Inicializa o gerenciador visual do jogo.
 
@@ -41,11 +41,9 @@ class Renderer:
         self._inicializar_pg()
         self._criar_surface_tabuleiro_estatica()
 
-        self.mostrar_turno: bool = mostrar_turno
-        
-        self.peca_arrastada = None
-        self.origem_mov = None
-        self.drag_offset = vetor(0, 0)
+        self.peca_arrastada: Peca | None    = None
+        self.drag_offset: vetor             = vetor(0, 0)
+        self.orientacao_tabuleiro: Cor      = Cor.BRANCO
         
         self.inicializar_sprites_tabuleiro()
 
@@ -58,6 +56,27 @@ class Renderer:
         self.surface_tabuleiro_base = Surface(size=TAM_TABULEIRO).convert()
         self.fonte = pg.font.SysFont(name=None, size=30)
         pg.display.set_caption('Xadrez')
+        pg.display.set_icon(
+            pg.transform.scale(
+                pg.image.load(self.IMG_DIR / 'cavalo_preto.png').convert_alpha(),
+                (32, 32)
+            )
+        )
+
+
+    def inverter_visao(self):
+        """
+        Inverte a orientação do tabuleiro.
+        """
+        if self.orientacao_tabuleiro == Cor.BRANCO:
+            self.orientacao_tabuleiro = Cor.PRETO
+        else:
+            self.orientacao_tabuleiro = Cor.BRANCO
+        
+        for linha in self.engine.matriz:
+            for peca in linha:
+                if peca:
+                    self.sincronizar_peca_ao_tabuleiro(peca)
 
 
     def inicializar_sprites_tabuleiro(self) -> None:
@@ -94,8 +113,13 @@ class Renderer:
         Args:
             peca (Peca): Peça a ser sincronizada.
         """
-        x = peca.posicao[1] * TAM_CASA
-        y = peca.posicao[0] * TAM_CASA
+        l_visual, c_visual = self.transformar_coords(
+            l=peca.posicao[0],
+            c=peca.posicao[1]
+        )
+        
+        x = c_visual * TAM_CASA
+        y = l_visual * TAM_CASA
         peca.rect = peca.sprite.get_rect(topleft=(x, y))
 
 
@@ -107,10 +131,21 @@ class Renderer:
             tuple[int, int]: (linha, coluna).
         """
         mx, my = pg.mouse.get_pos()
-        lx = (mx - TAB_POS[0]) // TAM_CASA
-        ly = (my - TAB_POS[1]) // TAM_CASA
-        return ly, lx
-    
+
+        c_visual = (mx - TAB_POS[0]) // TAM_CASA
+        l_visual = (my - TAB_POS[1]) // TAM_CASA
+
+        return self.transformar_coords(l_visual, c_visual)
+
+
+    def transformar_coords(self, l: int, c: int) -> tuple[int, int]:
+        """
+        Inverte as coordenadas se a orientação for Pretas.
+        """
+        if self.orientacao_tabuleiro == Cor.PRETO:
+            return 7 - l, 7 - c
+        return l, c
+
 
     def draw(self) -> None:
         """
@@ -180,7 +215,9 @@ class Renderer:
         Desenha indicadores visuais para movimentos normais e capturas.
         """
         for (l, c), tipo in self.engine.movimentos_possiveis:
-            x, y = c * TAM_CASA + TAB_POS[0], l * TAM_CASA + TAB_POS[1]
+            l_vis, c_vis = self.transformar_coords(l, c)
+            x, y = c_vis * TAM_CASA + TAB_POS[0], l_vis * TAM_CASA + TAB_POS[1]
+
             if tipo == TipoMov.CAPTURA:
                 pg.draw.rect(
                     surface=surface,
@@ -217,22 +254,33 @@ class Renderer:
 
     def mostrar_matriz_no_terminal(self) -> None:
         """
-        Exibe uma representação visual da matriz no terminal para debug.
+        Exibe uma representação visual da matriz no terminal para debug,
+        respeitando a orientação do tabuleiro.
         """
-        print("\n   " + " ".join([f" {c} " for c in range(8)])) 
+        if self.orientacao_tabuleiro == Cor.BRANCO:
+            indices = range(8)
+        else:
+            indices = range(7, -1, -1)
+
+        print("\n   " + " ".join([f" {c} " for c in indices])) 
         print("  " + "—" * 33)
 
-        for l in range(8):
+        for l in indices:
             linha_str = f"{l} |"
-            for c in range(8):
+            
+            for c in indices:
                 peca = self.engine.matriz[l, c]
+                
                 if peca is None:
                     char = "." if (l + c) % 2 == 0 else " "
                 else:
                     char = peca.tipo.upper() if peca.cor == 'w' else peca.tipo.lower()
+                
                 linha_str += f" {char} |"
+            
             print(linha_str)
             print("  " + "—" * 33)
 
+        orientacao_txt = "BRANCAS" if self.orientacao_tabuleiro == Cor.BRANCO else "PRETAS"
+        print(f"Visão: {orientacao_txt}")
         print(f"Turno atual: {'Brancas' if self.engine.turno == 'w' else 'Pretas'}\n")
-    

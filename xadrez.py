@@ -5,8 +5,6 @@ from engine import Engine
 from pygame import Vector2 as vetor
 from pecas.peca import Cor
 
-# TODO: Adicionar en passant
-
 
 class Xadrez:
     """
@@ -55,6 +53,12 @@ class Xadrez:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
+            
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_q:
+                    self.renderer.inverter_visao()
+                    if self.DEBUG:
+                        self.renderer.mostrar_matriz_no_terminal()
 
             if not self.engine.finalizado:
                 movimento, peca_movida = self.handle_input(event=event)

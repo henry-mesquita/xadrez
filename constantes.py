@@ -15,9 +15,9 @@ COR_XEQUE: tuple[int, int, int]         = (190, 0, 0)
 TAM_CASA: int                           = 70
 RAIO_CIRCULO: int                       = int(0.05 * TAM_CASA)
 if DEBUG:
-    TAMANHO_TELA: tuple[int, int]           = (TAM_CASA * 8 + 100, TAM_CASA * 8 + 1)
+    TAMANHO_TELA: tuple[int, int]       = (TAM_CASA * 8 + 100, TAM_CASA * 8 + 1)
 else:
-    TAMANHO_TELA: tuple[int, int]           = (TAM_CASA * 8, TAM_CASA * 8)
+    TAMANHO_TELA: tuple[int, int]       = (TAM_CASA * 8, TAM_CASA * 8)
 TAMANHO_PECA: int                       = TAM_CASA
 TAM_TABULEIRO: tuple[int, int]          = (TAM_CASA * 8, TAM_CASA * 8)
 TAB_POS: tuple[int, int]                = (0, 0)
