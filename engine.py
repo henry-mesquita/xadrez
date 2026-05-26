@@ -186,6 +186,7 @@ class Engine:
             distancia_c = mov.destino[1] - mov.origem[1]
             if abs(distancia_c) == 2:
                 if self.verificar_e_aplicar_roque(p.cor, distancia_c):
+                    self.mudar_turno()
                     self.limpar_movimentos()
                     return True
                 else:
@@ -196,7 +197,7 @@ class Engine:
             elif p.cor == Cor.PRETO:
                 self.roque_curto_preto = False
                 self.roque_longo_preto = False
-        
+
         if isinstance(p, Peao):
             distancia_l = mov.destino[0] - mov.origem[0]
             if abs(distancia_l) == 2:
@@ -245,7 +246,7 @@ class Engine:
 
         if not interno:
             self.limpar_movimentos()
-        
+
         self.mudar_turno()
         self._verificar_fim_de_jogo(self.turno)
 
@@ -396,7 +397,7 @@ class Engine:
         """
         if not self.roque_curto_branco:
             return False
-        if self.verificar_xeque('w'):
+        if self.verificar_xeque(Cor.BRANCO):
             return False
         
         posicao_rei     = Engine.ROQUE_CURTO_BRANCO['origem_rei']
@@ -404,7 +405,7 @@ class Engine:
 
         if not self._caminho_livre(posicao_rei, posicao_torre):
             return False
-        if self._casa_atacada(7, 5, 'w') or self._casa_atacada(7, 6, 'w'):
+        if self._casa_atacada(7, 5, Cor.BRANCO) or self._casa_atacada(7, 6, Cor.BRANCO):
             return False
         return True
 
@@ -415,7 +416,7 @@ class Engine:
         """
         if not self.roque_longo_branco:
             return False
-        if self.verificar_xeque('w'):
+        if self.verificar_xeque(Cor.BRANCO):
             return False
         
         posicao_rei     = Engine.ROQUE_LONGO_BRANCO['origem_rei']
@@ -423,7 +424,7 @@ class Engine:
 
         if not self._caminho_livre(posicao_rei, posicao_torre):
             return False
-        if self._casa_atacada(7, 3, 'w') or self._casa_atacada(7, 2, 'w'):
+        if self._casa_atacada(7, 3, Cor.BRANCO) or self._casa_atacada(7, 2, Cor.BRANCO):
             return False
         return True
 
@@ -434,7 +435,7 @@ class Engine:
         """
         if not self.roque_curto_preto:
             return False
-        if self.verificar_xeque('b'):
+        if self.verificar_xeque(Cor.PRETO):
             return False
 
         posicao_rei     = Engine.ROQUE_CURTO_PRETO['origem_rei']
@@ -442,7 +443,7 @@ class Engine:
 
         if not self._caminho_livre(posicao_rei, posicao_torre):
             return False
-        if self._casa_atacada(0, 5, 'b') or self._casa_atacada(0, 6, 'b'):
+        if self._casa_atacada(0, 5, Cor.PRETO) or self._casa_atacada(0, 6, Cor.PRETO):
             return False
         return True
 
@@ -453,7 +454,7 @@ class Engine:
         """
         if not self.roque_longo_preto:
             return False
-        if self.verificar_xeque('b'):
+        if self.verificar_xeque(Cor.PRETO):
             return False
 
         posicao_rei     = Engine.ROQUE_LONGO_PRETO['origem_rei']
@@ -461,7 +462,7 @@ class Engine:
 
         if not self._caminho_livre(posicao_rei, posicao_torre):
             return False
-        if self._casa_atacada(0, 3, 'b') or self._casa_atacada(0, 2, 'b'):
+        if self._casa_atacada(0, 3, Cor.PRETO) or self._casa_atacada(0, 2, Cor.PRETO):
             return False
         return True
 
@@ -558,7 +559,7 @@ class Engine:
         """
         Alterna o turno atual entre branco ('w') e preto ('b').
         """
-        self.turno = 'b' if self.turno == 'w' else 'w'
+        self.turno = Cor.PRETO if self.turno == Cor.BRANCO else Cor.BRANCO
 
 
     def carregar_posicao_fen(self, fen: str) -> None:
@@ -584,7 +585,7 @@ class Engine:
                 if ch.isdigit():
                     j += int(ch)
                 else:
-                    cor = 'w' if ch.isupper() else 'b'
+                    cor = Cor.BRANCO if ch.isupper() else Cor.PRETO
                     tipo = ch.lower()
                     self.matriz[i, j] = self.criar_peca(tipo=tipo, cor=cor, pos=[i, j])
                     j += 1
