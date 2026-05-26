@@ -1,9 +1,9 @@
 from constantes import *
 import pygame as pg
-from pecas.peca import TipoMov, Cor, Peca
+from pecas.peca import Cor, Peca
 from pygame import Vector2 as vetor, Surface
 from pathlib import Path
-from engine import Engine
+from engine import Engine, TipoMov
 
 # TODO: Promoção de peão
 # TODO: Regra dos 30 lances
@@ -18,12 +18,18 @@ class Renderer:
     highlights de movimentos e interações visuais.
     """
     MAPA_SPRITES = {
-        'wk': 'rei_branco.png', 'bk': 'rei_preto.png',
-        'wq': 'dama_branca.png', 'bq': 'dama_preta.png',
-        'wr': 'torre_branca.png', 'br': 'torre_preta.png',
-        'wb': 'bispo_branco.png', 'bb': 'bispo_preto.png',
-        'wn': 'cavalo_branco.png', 'bn': 'cavalo_preto.png',
-        'wp': 'peao_branco.png', 'bp': 'peao_preto.png'
+        'wk': 'rei_branco.png',
+        'bk': 'rei_preto.png',
+        'wq': 'dama_branca.png',
+        'bq': 'dama_preta.png',
+        'wr': 'torre_branca.png',
+        'br': 'torre_preta.png',
+        'wb': 'bispo_branco.png',
+        'bb': 'bispo_preto.png',
+        'wn': 'cavalo_branco.png',
+        'bn': 'cavalo_preto.png',
+        'wp': 'peao_branco.png',
+        'bp': 'peao_preto.png'
     }
 
     BASE_DIR = Path(__file__).resolve()
@@ -167,6 +173,13 @@ class Renderer:
 
 
     def _desenhar_tabuleiro(self, surface: Surface, dest: tuple[int, int]) -> None:
+        """
+        Desenha o tabuleiro na superficie.
+
+        Args:
+            surface (Surface): Superficie a ser desenhada.
+            dest (tuple[int, int]): Posição da superficie na tela.
+        """
         self.tela.blit(source=surface, dest=dest)
 
 

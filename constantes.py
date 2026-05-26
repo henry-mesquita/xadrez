@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 DEBUG: bool                             = False
 FRAMERATE: int                          = 75
 BRANCO: tuple[int, int, int]            = (255, 255, 255)
@@ -23,9 +21,3 @@ TAM_TABULEIRO: tuple[int, int]          = (TAM_CASA * 8, TAM_CASA * 8)
 TAB_POS: tuple[int, int]                = (0, 0)
 
 FEN_INICIAL: str = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-
-
-@dataclass
-class Movimento:
-    origem:     tuple[int, int]
-    destino:    tuple[int, int]

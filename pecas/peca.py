@@ -1,13 +1,4 @@
-from enum import Enum, auto
 from dataclasses import dataclass
-
-class TipoMov(Enum):
-    NORMAL          = auto()
-    CAPTURA         = auto()
-    ROQUE_CURTO     = auto()
-    ROQUE_LONGO     = auto()
-    EN_PASSANT      = auto()
-
 
 @dataclass(frozen=True)
 class Cor:

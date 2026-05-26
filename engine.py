@@ -1,12 +1,37 @@
 from constantes import *
 import numpy as np
-from pecas.peca import Peca, TipoMov, Cor
+from pecas.peca import Peca, Cor
 from pecas.bispo import Bispo
 from pecas.cavalo import Cavalo
 from pecas.dama import Dama
 from pecas.peao import Peao
 from pecas.rei import Rei
 from pecas.torre import Torre
+from dataclasses import dataclass
+from enum import Enum, auto
+
+
+@dataclass
+class Movimento:
+    """
+    Representa um movimento de peça.
+    
+    Attributes:
+        origem (tuple[int, int]): Casa inicial.
+        destino (tuple[int, int]): Casa final.
+
+        Formato: (linha, coluna), (x, y)
+    """
+    origem:     tuple[int, int]
+    destino:    tuple[int, int]
+
+
+class TipoMov(Enum):
+    NORMAL          = auto()
+    CAPTURA         = auto()
+    ROQUE_CURTO     = auto()
+    ROQUE_LONGO     = auto()
+    EN_PASSANT      = auto()
 
 
 class Engine:
@@ -225,10 +250,6 @@ class Engine:
         self._verificar_fim_de_jogo(self.turno)
 
         return True
-
-
-    def _cor_oposta(self, cor: Cor) -> Cor:
-        return Cor.PRETO if cor == Cor.BRANCO else Cor.BRANCO
 
 
     def _tem_movimentos_legais(self, cor: str) -> bool:
@@ -633,6 +654,12 @@ class Engine:
 
 
     def gerar_mov_peca(self, p: Peca) -> None:
+        """
+        Gera os movimentos possíveis de uma peça.
+
+        Args:
+            p (Peca): Instância da peça a ser movimentada.
+        """
         origem = self.achar_lc_peca(peca=p)
         if origem is None:
             self.movimentos_possiveis = []
@@ -709,6 +736,15 @@ class Engine:
 
 
     def _adicionar_en_passant(self, mov: list) -> None:
+        """
+        Adiciona os movimentos de en passant para o peão na lista de movimentos possíveis.
+
+        Args:
+            mov (list): Lista de movimentos.
+
+        Returns:
+            list: Lista de movimentos com os movimentos de en passant adicionados.
+        """
         mov.append(self.en_passant)
 
 

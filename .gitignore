@@ -181,3 +181,5 @@ cython_debug/
 .cursorindexingignore
 
 .vscode
+
+unico_arquivo.py
