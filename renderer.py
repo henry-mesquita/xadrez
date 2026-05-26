@@ -39,6 +39,10 @@ class Renderer:
         """
         self.engine: Engine = engine
         self._inicializar_pg()
+
+        self.cache_sprites: dict[str, Surface] = {}
+        self._carregar_cache_sprites()
+
         self._criar_surface_tabuleiro_estatica()
 
         self.peca_arrastada: Peca | None    = None
@@ -46,6 +50,18 @@ class Renderer:
         self.orientacao_tabuleiro: Cor      = Cor.BRANCO
         
         self.inicializar_sprites_tabuleiro()
+
+
+    def _carregar_cache_sprites(self) -> None:
+        """
+        Carrega todas as imagens de uma vez, escala e armazena no cache.
+        """
+        for chave, nome_arquivo in self.MAPA_SPRITES.items():
+            path = self.IMG_DIR / nome_arquivo
+            img = pg.image.load(path).convert_alpha()
+            img_escalada = pg.transform.scale(img, (TAMANHO_PECA, TAMANHO_PECA))
+            
+            self.cache_sprites[chave] = img_escalada
 
 
     def _inicializar_pg(self) -> None:
@@ -81,46 +97,38 @@ class Renderer:
 
     def inicializar_sprites_tabuleiro(self) -> None:
         """
-        Itera pela matriz da engine para carregar as imagens das peças.
+        Itera pela matriz e vincula as peças ao sprite do cache.
         """
         for linha in self.engine.matriz:
             for peca in linha:
                 if peca is not None:
-                    self.carregar_sprite_peca(peca=peca)
+                    self.vincular_sprite_a_peca(peca=peca)
 
 
-    def carregar_sprite_peca(self, peca) -> None:
+    def vincular_sprite_a_peca(self, peca: Peca) -> None:
         """
-        Carrega o arquivo de imagem e associa o Rect inicial à peça.
-
-        Args:
-            peca (Peca): A peça a ser carregada.
+        Faz a peça apontar para o sprite existente no cache e define seu Rect.
         """
         chave = f"{peca.cor}{peca.tipo}"
-        path = self.IMG_DIR / self.MAPA_SPRITES[chave]
-        peca.sprite = pg.transform.scale(
-            pg.image.load(path).convert_alpha(),
-            (TAMANHO_PECA, TAMANHO_PECA)
-        )
-
+        peca.sprite = self.cache_sprites[chave]
+        
         self.sincronizar_peca_ao_tabuleiro(peca=peca)
 
 
-    def sincronizar_peca_ao_tabuleiro(self, peca) -> None:
+    def sincronizar_peca_ao_tabuleiro(self, peca: Peca) -> None:
         """
-        Alinha a posição visual (Rect) com a posição lógica da matriz.
-
-        Args:
-            peca (Peca): Peça a ser sincronizada.
+        Calcula a posição visual do Rect baseada na lógica e na orientação.
+        Resolve o problema do AttributeError injetando o atributo se necessário.
         """
-        l_visual, c_visual = self.transformar_coords(
-            l=peca.posicao[0],
-            c=peca.posicao[1]
-        )
+        l_visual, c_visual = self.transformar_coords(peca.posicao[0], peca.posicao[1])
         
         x = c_visual * TAM_CASA
         y = l_visual * TAM_CASA
-        peca.rect = peca.sprite.get_rect(topleft=(x, y))
+        
+        if not hasattr(peca, 'rect') or peca.rect is None:
+            peca.rect = peca.sprite.get_rect(topleft=(x, y))
+        else:
+            peca.rect.topleft = (x, y)
 
 
     def obter_lc_pelo_mouse(self) -> tuple[int, int]:
@@ -171,13 +179,13 @@ class Renderer:
         """
         for linha in self.engine.matriz:
             for peca in linha:
-                if peca and peca != self.peca_arrastada:
+                if peca and peca != self.peca_arrastada and hasattr(peca, 'rect'):
                     self.tela.blit(
                         source=peca.sprite,
                         dest=peca.rect.move(TAB_POS)
                     )
 
-        if self.peca_arrastada:
+        if self.peca_arrastada and hasattr(self.peca_arrastada, 'rect'):
             surface.blit(
                 source=self.peca_arrastada.sprite,
                 dest=self.peca_arrastada.rect.move(TAB_POS)

@@ -57,7 +57,7 @@ class Xadrez:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_q:
                     self.renderer.inverter_visao()
-                    if self.DEBUG:
+                    if DEBUG:
                         self.renderer.mostrar_matriz_no_terminal()
 
             if not self.engine.finalizado:
