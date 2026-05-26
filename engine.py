@@ -653,6 +653,25 @@ class Engine:
         return None
 
 
+    def achar_lc_rei(self, cor: Cor) -> tuple[int, int] | None:
+        """
+        Encontra a linha e coluna de uma instância de peça na matriz.
+
+        Args:
+            peca (Peca): Instância da peça a ser localizada.
+
+        Returns:
+            tuple[int, int] | None: (linha, coluna) ou None se não encontrada.
+        """
+        for li in range(8):
+            for co in range(8):
+                p = self.matriz[li, co]
+                if isinstance(p, Rei):
+                    if p.cor == cor:
+                        return (li, co)
+        return None
+
+
     def gerar_mov_peca(self, p: Peca) -> None:
         """
         Gera os movimentos possíveis de uma peça.
@@ -910,28 +929,6 @@ class Engine:
                 return False
             atual = (atual[0] + passo_l, atual[1] + passo_c)
         return True
-
-
-    def achar_lc_rei(self, cor: str) -> tuple[int, int] | None:
-        """
-        Localiza a posição do rei de uma determinada cor na matriz.
-
-        Args:
-            cor (str): 'w' para branco, 'b' para preto.
-
-        Returns:
-            tuple[int, int] | None: Posição (L, C) do rei.
-        """
-        cor = cor.lower()
-        if cor not in (Cor.PRETO, Cor.BRANCO):
-            raise ValueError('Cor precisa ser "w" ou "b"')
-
-        for li in range(8):
-            for co in range(8):
-                p = self.matriz[li, co]
-                if p is not None and isinstance(p, Rei) and p.cor == cor:
-                    return (li, co)
-        return None
 
 
     def verificar_xeque(self, cor: str) -> bool:

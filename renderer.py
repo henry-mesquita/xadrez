@@ -43,31 +43,19 @@ class Renderer:
         Args:
             engine (Engine): Instância da engine lógica.
         """
+        # Engine
         self.engine: Engine = engine
-        self._inicializar_pg()
 
+        # Render
+        self._inicializar_pg()
+        self.peca_arrastada: Peca | None    = None
         self.cache_sprites: dict[str, Surface] = {}
         self._carregar_cache_sprites()
-
         self._criar_surface_tabuleiro_estatica()
+        self.drag_offset: vetor = vetor(0, 0)
+        self.orientacao_tabuleiro: Cor = Cor.BRANCO
 
-        self.peca_arrastada: Peca | None    = None
-        self.drag_offset: vetor             = vetor(0, 0)
-        self.orientacao_tabuleiro: Cor      = Cor.BRANCO
-        
         self.inicializar_sprites_tabuleiro()
-
-
-    def _carregar_cache_sprites(self) -> None:
-        """
-        Carrega todas as imagens de uma vez, escala e armazena no cache.
-        """
-        for chave, nome_arquivo in self.MAPA_SPRITES.items():
-            path = self.IMG_DIR / nome_arquivo
-            img = pg.image.load(path).convert_alpha()
-            img_escalada = pg.transform.scale(img, (TAMANHO_PECA, TAMANHO_PECA))
-            
-            self.cache_sprites[chave] = img_escalada
 
 
     def _inicializar_pg(self) -> None:
@@ -75,30 +63,18 @@ class Renderer:
         Configura o ambiente do Pygame e superfícies de desenho.
         """
         self.tela = pg.display.set_mode(size=TAMANHO_TELA)
-        self.surface_tabuleiro_base = Surface(size=TAM_TABULEIRO).convert()
+        self.surf_base_tabuleiro = Surface(size=TAM_TABULEIRO).convert()
         self.fonte = pg.font.SysFont(name=None, size=30)
         pg.display.set_caption('Xadrez')
+
+        icon_path = self.IMG_DIR / 'cavalo_preto.png'
+
         pg.display.set_icon(
             pg.transform.scale(
-                pg.image.load(self.IMG_DIR / 'cavalo_preto.png').convert_alpha(),
-                (32, 32)
+                surface=pg.image.load(icon_path).convert_alpha(),
+                size=(32, 32)
             )
         )
-
-
-    def inverter_visao(self):
-        """
-        Inverte a orientação do tabuleiro.
-        """
-        if self.orientacao_tabuleiro == Cor.BRANCO:
-            self.orientacao_tabuleiro = Cor.PRETO
-        else:
-            self.orientacao_tabuleiro = Cor.BRANCO
-        
-        for linha in self.engine.matriz:
-            for peca in linha:
-                if peca:
-                    self.sincronizar_peca_ao_tabuleiro(peca)
 
 
     def inicializar_sprites_tabuleiro(self) -> None:
@@ -113,7 +89,10 @@ class Renderer:
 
     def vincular_sprite_a_peca(self, peca: Peca) -> None:
         """
-        Faz a peça apontar para o sprite existente no cache e define seu Rect.
+        Faz a peça apontar ao sprite correspondente no cache.
+
+        Args:
+            peca (Peca): Instância da peça.
         """
         chave = f"{peca.cor}{peca.tipo}"
         peca.sprite = self.cache_sprites[chave]
@@ -124,17 +103,54 @@ class Renderer:
     def sincronizar_peca_ao_tabuleiro(self, peca: Peca) -> None:
         """
         Calcula a posição visual do Rect baseada na lógica e na orientação.
-        Resolve o problema do AttributeError injetando o atributo se necessário.
+
+        Args:
+            peca (Peca): Instância da peça.
         """
-        l_visual, c_visual = self.transformar_coords(peca.posicao[0], peca.posicao[1])
+        l_visual, c_visual = self.transformar_coords(
+            l=peca.posicao[0],
+            c=peca.posicao[1]
+        )
         
-        x = c_visual * TAM_CASA
-        y = l_visual * TAM_CASA
-        
+        x: int = c_visual * TAM_CASA
+        y: int = l_visual * TAM_CASA
+
+        # Cria o rect caso não exista
         if not hasattr(peca, 'rect') or peca.rect is None:
             peca.rect = peca.sprite.get_rect(topleft=(x, y))
         else:
             peca.rect.topleft = (x, y)
+
+
+    def _carregar_cache_sprites(self) -> None:
+        """
+        Carrega todas as imagens de uma vez, escala e armazena no cache.
+        """
+        for chave, nome_arquivo in self.MAPA_SPRITES.items():
+            path = self.IMG_DIR / nome_arquivo
+            img = pg.image.load(path).convert_alpha()
+            img_escalada = pg.transform.scale(
+                surface=img,
+                size=(TAMANHO_PECA, TAMANHO_PECA)
+            )
+            
+            self.cache_sprites[chave] = img_escalada
+
+
+    def inverter_visao(self):
+        """
+        Inverte a orientação do tabuleiro (apenas visual).
+        """
+        if self.orientacao_tabuleiro == Cor.BRANCO:
+            self.orientacao_tabuleiro = Cor.PRETO
+        else:
+            self.orientacao_tabuleiro = Cor.BRANCO
+
+        # Força a sincronização de todas as peças
+        for linha in self.engine.matriz:
+            for peca in linha:
+                if peca:
+                    self.sincronizar_peca_ao_tabuleiro(peca)
 
 
     def obter_lc_pelo_mouse(self) -> tuple[int, int]:
@@ -154,7 +170,14 @@ class Renderer:
 
     def transformar_coords(self, l: int, c: int) -> tuple[int, int]:
         """
-        Inverte as coordenadas se a orientação for Pretas.
+        Inverte as coordenadas se a orientação for pretas.
+
+        Args:
+            l (int): Linha.
+            c (int): Coluna.
+
+        Returns:
+            tuple[int, int]: (linha, coluna).
         """
         if self.orientacao_tabuleiro == Cor.PRETO:
             return 7 - l, 7 - c
@@ -165,11 +188,49 @@ class Renderer:
         """
         Coordena o desenho do tabuleiro, destaques e peças na tela.
         """
-        self._desenhar_tabuleiro(surface=self.surface_tabuleiro_base, dest=TAB_POS)
-        if DEBUG:
-            self._desenhar_turno(surface=self.tela)
+        self._desenhar_tabuleiro(
+            surface=self.surf_base_tabuleiro,
+            dest=TAB_POS
+        )
+        self._desenhar_xeque()
         self._desenhar_movimentos_possiveis(surface=self.tela)
         self._desenhar_pecas(surface=self.tela)
+        if DEBUG:
+            self._desenhar_turno(surface=self.tela)
+
+
+    def _desenhar_xeque(self) -> None:
+        """Verifica se há xeque e chama o desenho na superfície dinâmica (tela)."""
+        if self.engine.verificar_xeque(Cor.BRANCO):
+            self._desenhar_xeque_branco(surface=self.tela)
+        if self.engine.verificar_xeque(Cor.PRETO):
+            self._desenhar_xeque_preto(surface=self.tela)
+
+
+    def _desenhar_xeque_preto(self, surface: Surface) -> None:
+        pos = self.engine.achar_lc_rei(Cor.PRETO)
+        if pos:
+            l_vis, c_vis = self.transformar_coords(pos[0], pos[1])
+            x = c_vis * TAM_CASA + TAB_POS[0]
+            y = l_vis * TAM_CASA + TAB_POS[1]
+
+            surf_xeque = pg.Surface((TAM_CASA, TAM_CASA))
+            surf_xeque.fill(COR_XEQUE)
+            surf_xeque.set_alpha(TRANSPARENCIA_XEQUE) 
+            surface.blit(surf_xeque, (x, y))
+
+
+    def _desenhar_xeque_branco(self, surface: Surface) -> None:
+        pos = self.engine.achar_lc_rei(Cor.BRANCO)
+        if pos:
+            l_vis, c_vis = self.transformar_coords(pos[0], pos[1])
+            x = c_vis * TAM_CASA + TAB_POS[0]
+            y = l_vis * TAM_CASA + TAB_POS[1]
+
+            surf_xeque = pg.Surface((TAM_CASA, TAM_CASA))
+            surf_xeque.fill(COR_XEQUE)
+            surf_xeque.set_alpha(TRANSPARENCIA_XEQUE)
+            surface.blit(surf_xeque, (x, y))
 
 
     def _desenhar_tabuleiro(self, surface: Surface, dest: tuple[int, int]) -> None:
@@ -226,7 +287,7 @@ class Renderer:
         for l in range(8):
             for c in range(8):
                 cor = COR_CASAS_PARES if (l + c) % 2 == 0 else COR_CASAS_IMPARES
-                pg.draw.rect(surface=self.surface_tabuleiro_base,
+                pg.draw.rect(surface=self.surf_base_tabuleiro,
                              color=cor,
                              rect=(c*TAM_CASA, l*TAM_CASA, TAM_CASA, TAM_CASA))
 
