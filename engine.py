@@ -136,7 +136,7 @@ class Engine:
         1. Rei vs Rei
         2. Rei e Bispo vs Rei
         3. Rei e Cavalo vs Rei
-        4. Rei e Bispo vs Rei e Bispo (mesma cor de casa) - Opcional, mas recomendado.
+        4. Rei e Bispo vs Rei e Bispo (mesma cor de casa)
         """
         pecas_vivas: list[Peca] = []
         for li in range(8):
@@ -170,6 +170,7 @@ class Engine:
 
         Args:
             mov (Movimento): Objeto contendo as coordenadas de origem e destino.
+            interno (bool): Indica se está numa recursão ou não.
 
         Returns:
             bool: True se o movimento for valido, False caso contrário.
@@ -210,17 +211,33 @@ class Engine:
 
         if isinstance(p, Peao):
             distancia_l = mov.destino[0] - mov.origem[0]
+
             if abs(distancia_l) == 2:
-                posicao_lado_esquerdo   = mov.destino[0], mov.destino[1] - 1
-                posicao_lado_direito    = mov.destino[0], mov.destino[1] + 1
+                linha, coluna = mov.destino
+
+                posicao_lado_esquerdo = (
+                    linha,
+                    coluna - 1
+                )
+
+                posicao_lado_direito = (
+                    linha,
+                    coluna + 1
+                )
+
+                if p.cor == Cor.PRETO:
+                    direcao = -1
+                else:
+                    direcao = 1
 
                 self.en_passant = [
                     (
-                        mov.destino[0] - 1 if p.cor == Cor.PRETO else mov.destino[0] + 1,
-                        mov.destino[1]
+                        linha + direcao,
+                        coluna
                     ),
                     TipoMov.CAPTURA
                 ]
+
                 self.posicao_peao_en_passant = []
                 self.posicao_alvo_en_passant = mov.destino
 
@@ -272,7 +289,7 @@ class Engine:
             cor (str): Cor do jogador.
 
         Returns:
-            bool: True se o jogador possui pelo menos um movimento legal, False caso contrário.
+            bool: True se o jogador possui pelo menos um movimento legal.
         """
         for li in range(8):
             for co in range(8):
@@ -283,7 +300,10 @@ class Engine:
                     
                     if isinstance(p, Rei):
                         self._adicionar_roques(cor, candidatos)
-                    if isinstance(p, Peao) and p.posicao in self.posicao_peao_en_passant:
+                    if (
+                        isinstance(p, Peao) and
+                        p.posicao in self.posicao_peao_en_passant
+                    ):
                         self._adicionar_en_passant(candidatos)
                     
                     for destino, tipo in candidatos:
@@ -332,7 +352,13 @@ class Engine:
                     self.vitoria_negras = True
                 else:
                     self.vitoria_brancas = True
-                print(f"Xeque-Mate! Vitória das {'Pretas' if cor_atual == Cor.BRANCO else 'Brancas'}.")
+                
+                if cor_atual == Cor.BRANCO:
+                    cor = 'Pretas'
+                else:
+                    cor = 'Brancas'
+
+                print(f"Xeque-Mate! Vitória das {cor}.")
             else:
                 self.empate = True
                 print("Empate por afogamento (Stalemate).")
@@ -450,7 +476,10 @@ class Engine:
         """
         Alterna o turno atual entre branco ('w') e preto ('b').
         """
-        self.turno = Cor.PRETO if self.turno == Cor.BRANCO else Cor.BRANCO
+        if self.turno == Cor.BRANCO:
+            self.turno = Cor.PRETO
+        else:
+            self.turno = Cor.BRANCO
 
 
     def carregar_posicao_fen(self, fen: str) -> None:
@@ -460,7 +489,9 @@ class Engine:
         """
         partes = fen.strip().split()
         if len(partes) < 4:
-            raise ValueError("FEN inválida: deve conter pelo menos os 4 campos iniciais.")
+            raise ValueError(
+                "FEN inválida: deve conter pelo menos os 4 campos iniciais."
+            )
 
         tabuleiro_str, turno, roques, ep_square = partes[:4]
 
@@ -468,7 +499,9 @@ class Engine:
 
         ranks = tabuleiro_str.split('/')
         if len(ranks) != 8:
-            raise ValueError("FEN inválida: piece placement deve ter 8 ranks.")
+            raise ValueError(
+                "FEN inválida: piece placement deve ter 8 ranks."
+            )
 
         for i, rank in enumerate(ranks):
             j = 0
@@ -623,6 +656,15 @@ class Engine:
     ) -> bool:
         """
         Simula um movimento para verificar se ele resultaria no próprio rei em xeque.
+
+        Args:
+            mov_destino (tuple[int, int]): (linha, coluna) do destino.
+            tipo (TipoMov): Tipo de movimento.
+            origem (tuple[int, int]): (linha, coluna) da origem.
+            cor (str): 'w' para branco, 'b' para preto.
+
+        Returns:
+            bool: True se o movimento resultar em xeque, False caso contrário.
         """
         backup_destino = self.matriz[mov_destino[0], mov_destino[1]]
         peca_movendo = self.matriz[origem[0], origem[1]]
@@ -659,7 +701,7 @@ class Engine:
 
     def _adicionar_en_passant(self, mov: list) -> None:
         """
-        Adiciona os movimentos de en passant para o peão na lista de movimentos possíveis.
+        Adiciona as casas de en passant na lista de movimentos possíveis.
 
         Args:
             mov (list): Lista de movimentos.
@@ -675,7 +717,6 @@ class Engine:
         cor: str,
         mov: list
     ) -> list[tuple[int, int], TipoMov]:
-
         if self.verificar_roque(cor, "curto"):
             destino = (
                 self.ROQUES[(cor, "curto")]["destino_rei"]
@@ -734,7 +775,11 @@ class Engine:
         """
         movs: list[tuple[tuple[int, int], TipoMov]] = []
         for casa in movimentos:
-            tipo = self._classificar_movimento(peca=peca, origem=origem, destino_lc=casa)
+            tipo = self._classificar_movimento(
+                peca=peca,
+                origem=origem,
+                destino_lc=casa
+            )
             if tipo is not None:
                 movs.append((casa, tipo))
         return movs
@@ -798,7 +843,11 @@ class Engine:
         return TipoMov.NORMAL
 
 
-    def _caminho_livre(self, origem: tuple[int, int], destino: tuple[int, int]) -> bool:
+    def _caminho_livre(
+            self,
+            origem: tuple[int, int],
+            destino: tuple[int, int]
+    ) -> bool:
         """
         Verifica se há obstáculos entre duas casas para peças deslizantes.
 
@@ -916,7 +965,16 @@ class Engine:
         Returns:
             bool: True se estiver em xeque, False caso contrário.
         """
-        offsets_cavalo = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (2, -1), (2, 1), (1, -2), (1, 2)]
+        offsets_cavalo = [
+            (-2, -1),
+            (-2, 1),
+            (-1, -2),
+            (-1, 2),
+            (2, -1),
+            (2, 1),
+            (1, -2),
+            (1, 2)
+        ]
         for offset in offsets_cavalo:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
             if self.lc_valido(linha=l, coluna=c):
@@ -937,7 +995,16 @@ class Engine:
         Returns:
             bool: True se estiver em xeque, False caso contrário.
         """
-        offsets_rei = [(-1, -1), (-1, 0), (-1, 1), (1, -1), (1, 0), (1, 1), (0, -1), (0, 1)]
+        offsets_rei = [
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1),
+            (0, -1),
+            (0, 1)
+        ]
         for offset in offsets_rei:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
             if self.lc_valido(linha=l, coluna=c):
