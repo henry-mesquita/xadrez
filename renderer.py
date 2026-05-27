@@ -4,11 +4,6 @@ from pecas.peca import Cor, Peca
 from pygame import Vector2 as vetor, Surface
 from pathlib import Path
 from engine import Engine, TipoMov
-from pprint import pprint
-
-# TODO: Promoção de peão
-# TODO: Regra dos 50 lances (ou 100 meios-lances)
-# TODO: Empate por 3 repetições
 
 
 class Renderer:
@@ -19,24 +14,13 @@ class Renderer:
     esincronizando posições visuais com o estado lógico da Engine.
     Responsável por de sprites e input handling.
     """
-    MAPA_SPRITES: dict = {
-        'wk': 'rei_branco.png',
-        'bk': 'rei_preto.png',
-        'wq': 'dama_branca.png',
-        'bq': 'dama_preta.png',
-        'wr': 'torre_branca.png',
-        'br': 'torre_preta.png',
-        'wb': 'bispo_branco.png',
-        'bb': 'bispo_preto.png',
-        'wn': 'cavalo_branco.png',
-        'bn': 'cavalo_preto.png',
-        'wp': 'peao_branco.png',
-        'bp': 'peao_preto.png'
-    }
-
     BASE_DIR = Path(__file__).resolve()
-    IMG_DIR = BASE_DIR.parent / "img" / "png"
-
+    IMG_DIR = (
+        BASE_DIR.parent /
+        "img" /
+        "png" /
+        ESTILO_PECAS
+    )
 
     def __init__(self, engine: Engine) -> None:
         """
@@ -69,7 +53,7 @@ class Renderer:
         self.fonte = pg.font.SysFont(name=None, size=30)
         pg.display.set_caption('chess.py')
 
-        icon_path = self.IMG_DIR / 'cavalo_preto.png'
+        icon_path = icon_path = self.IMG_DIR / 'bN.png'
 
         pg.display.set_icon(
             pg.transform.scale(
@@ -132,16 +116,18 @@ class Renderer:
 
     def _carregar_cache_sprites(self) -> None:
         """
-        Carrega todas as imagens de uma vez, escala e armazena no cache.
+        Carrega todos os sprites do estilo selecionado.
         """
-        for chave, nome_arquivo in self.MAPA_SPRITES.items():
-            path = self.IMG_DIR / nome_arquivo
+        for path in self.IMG_DIR.glob("*.png"):
+            chave = path.stem.lower()
+
             img = pg.image.load(path).convert_alpha()
+
             img_escalada = pg.transform.scale(
                 surface=img,
                 size=(TAMANHO_PECA, TAMANHO_PECA)
             )
-            
+
             self.cache_sprites[chave] = img_escalada
 
 
