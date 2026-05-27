@@ -102,10 +102,10 @@ class Engine:
         self.roque_curto_preto:     bool = True
         self.roque_longo_preto:     bool = True
 
-        self.halfmove_clock: int = 0
-        self.fullmove_number: int = 1
+        self.halfmove_clock:        int = 0
+        self.fullmove_number:       int = 1
 
-        self.carregar_posicao_fen(fen='8/8/8/4p3/3P4/k7/8/K7 w - - 99 60')
+        self.carregar_posicao_fen(fen=FEN_INICIAL)
         self.turno = Cor.BRANCO
 
         self.en_passant: None | list[tuple[int, int], TipoMov] = None
@@ -115,6 +115,8 @@ class Engine:
         self.vitoria_negras:    bool = False
         self.vitoria_brancas:   bool = False
         self.empate:            bool = False
+
+        self.posicoes_jogadas: list[str] = []
 
 
     def movimento_possivel(self, mov: Movimento) -> bool:
@@ -277,9 +279,14 @@ class Engine:
 
         if self.turno == Cor.BRANCO:
             self.fullmove_number += 1
+        
 
-        if self._verificar_fim_de_jogo(self.turno):
-            self.finalizado = True
+        if not interno:
+            self.posicoes_jogadas.append(
+                self.exportar_posicao_fen()
+            )
+
+        self._verificar_fim_de_jogo(cor_atual=self.turno)
 
         return True
 
@@ -408,19 +415,47 @@ class Engine:
         return False
 
 
-    def _verificar_fim_de_jogo(self, cor_atual: str) -> None:
+    def _verificar_empate_por_repeticao(self) -> bool:
+        """
+        Verifica empate por tripla repetição de posição.
+
+        Returns:
+            bool: True se houver empate.
+        """
+        posicoes = {}
+
+        for fen in self.posicoes_jogadas:
+            chave = " ".join(fen.split()[:4])
+
+            if chave not in posicoes:
+                posicoes[chave] = 0
+
+            posicoes[chave] += 1
+
+            if posicoes[chave] >= 3:
+                self.empate = True
+                print("Empate por tripla repetição.")
+                return True
+
+        return False
+
+
+    def _verificar_fim_de_jogo(self, cor_atual: str) -> bool:
         """
         Agrega todas as checagens de fim de partida.
         """
-
         if self._verificar_xeque_mate_ou_afogamento(cor_atual):
-            return
+            return False
 
         if self._verificar_empate_insuficiencia_material():
-            return
+            return False
 
         if self._verificar_empate_50_lances():
-            return
+            return False
+        
+        if self._verificar_empate_por_repeticao():
+            return False
+        return True
 
 
     def verificar_e_aplicar_roque(
