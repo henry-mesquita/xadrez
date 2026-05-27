@@ -50,32 +50,42 @@ class Engine:
         'k': Rei
     }
 
-    ROQUE_CURTO_PRETO = {
-        'origem_rei': (0, 4),
-        'destino_rei': (0, 6),
-        'origem_torre': (0, 7),
-        'destino_torre': (0, 5)
-    }
+    ROQUES = {
+        (Cor.BRANCO, "curto"): {
+            "direito": "roque_curto_branco",
+            "origem_rei": (7, 4),
+            "destino_rei": (7, 6),
+            "origem_torre": (7, 7),
+            "destino_torre": (7, 5),
+            "casas_seguras": [(7, 5), (7, 6)]
+        },
 
-    ROQUE_LONGO_PRETO = {
-        'origem_rei': (0, 4),
-        'destino_rei': (0, 2),
-        'origem_torre': (0, 0),
-        'destino_torre': (0, 3)
-    }
+        (Cor.BRANCO, "longo"): {
+            "direito": "roque_longo_branco",
+            "origem_rei": (7, 4),
+            "destino_rei": (7, 2),
+            "origem_torre": (7, 0),
+            "destino_torre": (7, 3),
+            "casas_seguras": [(7, 3), (7, 2)]
+        },
 
-    ROQUE_CURTO_BRANCO = {
-        'origem_rei': (7, 4),
-        'destino_rei': (7, 6),
-        'origem_torre': (7, 7),
-        'destino_torre': (7, 5)
-    }
+        (Cor.PRETO, "curto"): {
+            "direito": "roque_curto_preto",
+            "origem_rei": (0, 4),
+            "destino_rei": (0, 6),
+            "origem_torre": (0, 7),
+            "destino_torre": (0, 5),
+            "casas_seguras": [(0, 5), (0, 6)]
+        },
 
-    ROQUE_LONGO_BRANCO = {
-        'origem_rei': (7, 4),
-        'destino_rei': (7, 2),
-        'origem_torre': (7, 0),
-        'destino_torre': (7, 3)
+        (Cor.PRETO, "longo"): {
+            "direito": "roque_longo_preto",
+            "origem_rei": (0, 4),
+            "destino_rei": (0, 2),
+            "origem_torre": (0, 0),
+            "destino_torre": (0, 3),
+            "casas_seguras": [(0, 3), (0, 2)]
+        }
     }
 
 
@@ -333,35 +343,17 @@ class Engine:
             print("Empate por insuficiência de material.")
 
 
-    def verificar_e_aplicar_roque(self, cor: Cor, distancia_c: int) -> bool:
-        """ 
-        Retorna True se o roque foi aplicado com sucesso.
+    def verificar_e_aplicar_roque(
+        self,
+        cor: Cor,
+        distancia_c: int
+    ) -> bool:
+        lado = "curto" if distancia_c > 0 else "longo"
 
-        Args:
-            cor (str): Cor do rei.
-            distancia_c (int): Diferença de colunas entre origem e destino.
+        if self.verificar_roque(cor, lado):
+            self.executar_roque(cor, lado)
+            return True
 
-        Returns:
-            bool: True se o roque foi aplicado com sucesso, False caso contrário.
-        """
-        if cor == Cor.BRANCO:
-            if distancia_c > 0:
-                if self.verificar_roque_curto_branco():
-                    self.executar_roque_curto_branco()
-                    return True
-            else:
-                if self.verificar_roque_longo_branco():
-                    self.executar_roque_longo_branco()
-                    return True
-        else:
-            if distancia_c > 0:
-                if self.verificar_roque_curto_preto():
-                    self.executar_roque_curto_preto()
-                    return True
-            else:
-                if self.verificar_roque_longo_preto():
-                    self.executar_roque_longo_preto()
-                    return True
         return False
 
 
@@ -391,165 +383,64 @@ class Engine:
         return atacada
 
 
-    def verificar_roque_curto_branco(self) -> bool:
+    def verificar_roque(self, cor: Cor, lado: str) -> bool:
         """
-        Verifica se o branco pode fazer o roque curto.
-        """
-        if not self.roque_curto_branco:
-            return False
-        if self.verificar_xeque(Cor.BRANCO):
-            return False
-        
-        posicao_rei     = Engine.ROQUE_CURTO_BRANCO['origem_rei']
-        posicao_torre   = Engine.ROQUE_CURTO_BRANCO['origem_torre']
+        Retorna True se o roque pode ser realizado.
 
-        if not self._caminho_livre(posicao_rei, posicao_torre):
+        Args:
+            cor (str): Cor do rei.
+            lado (str): "curto" ou "longo".
+
+        Returns:
+            bool: True se o roque pode ser realizado, False caso contrário.
+        """
+        dados = self.ROQUES[(cor, lado)]
+
+        direito = getattr(self, dados["direito"])
+
+        if not direito:
             return False
-        if self._casa_atacada(7, 5, Cor.BRANCO) or self._casa_atacada(7, 6, Cor.BRANCO):
+
+        if self.verificar_xeque(cor):
             return False
+
+        if not self._caminho_livre(
+            origem=dados["origem_rei"],
+            destino=dados["origem_torre"]
+        ):
+            return False
+
+        for l, c in dados["casas_seguras"]:
+            if self._casa_atacada(l, c, cor):
+                return False
+
         return True
 
 
-    def verificar_roque_longo_branco(self) -> bool:
+    def executar_roque(self, cor: Cor, lado: str) -> None:
         """
-        Verifica se o branco pode fazer o roque longo.
+        Executa um roque.
+
+        Args:
+            cor (str): Cor do rei.
+            lado (str): "curto" ou "longo".
         """
-        if not self.roque_longo_branco:
-            return False
-        if self.verificar_xeque(Cor.BRANCO):
-            return False
-        
-        posicao_rei     = Engine.ROQUE_LONGO_BRANCO['origem_rei']
-        posicao_torre   = Engine.ROQUE_LONGO_BRANCO['origem_torre']
+        dados = self.ROQUES[(cor, lado)]
 
-        if not self._caminho_livre(posicao_rei, posicao_torre):
-            return False
-        if self._casa_atacada(7, 3, Cor.BRANCO) or self._casa_atacada(7, 2, Cor.BRANCO):
-            return False
-        return True
-
-
-    def verificar_roque_curto_preto(self) -> bool:
-        """
-        Verifica se o preto pode fazer o roque curto.
-        """
-        if not self.roque_curto_preto:
-            return False
-        if self.verificar_xeque(Cor.PRETO):
-            return False
-
-        posicao_rei     = Engine.ROQUE_CURTO_PRETO['origem_rei']
-        posicao_torre   = Engine.ROQUE_CURTO_PRETO['origem_torre']
-
-        if not self._caminho_livre(posicao_rei, posicao_torre):
-            return False
-        if self._casa_atacada(0, 5, Cor.PRETO) or self._casa_atacada(0, 6, Cor.PRETO):
-            return False
-        return True
-
-
-    def verificar_roque_longo_preto(self) -> bool:
-        """
-        Verifica se o preto pode fazer o roque longo.
-        """
-        if not self.roque_longo_preto:
-            return False
-        if self.verificar_xeque(Cor.PRETO):
-            return False
-
-        posicao_rei     = Engine.ROQUE_LONGO_PRETO['origem_rei']
-        posicao_torre   = Engine.ROQUE_LONGO_PRETO['origem_torre']
-
-        if not self._caminho_livre(posicao_rei, posicao_torre):
-            return False
-        if self._casa_atacada(0, 3, Cor.PRETO) or self._casa_atacada(0, 2, Cor.PRETO):
-            return False
-        return True
-
-
-    def executar_roque_curto_preto(self):
-        """
-        Executa o roque curto para o preto.
-        """
-        # Rei
+        # Move rei
         self.executar_movimento(
             mov=Movimento(
-                origem=Engine.ROQUE_CURTO_PRETO['origem_rei'],
-                destino=Engine.ROQUE_CURTO_PRETO['destino_rei']
-            ),
-            interno=True
-        )
-        # Torre
-        self.executar_movimento(
-            mov=Movimento(
-                origem=Engine.ROQUE_CURTO_PRETO['origem_torre'],
-                destino=Engine.ROQUE_CURTO_PRETO['destino_torre']
+                origem=dados["origem_rei"],
+                destino=dados["destino_rei"]
             ),
             interno=True
         )
 
-
-    def executar_roque_longo_preto(self):
-        """
-        Executa o roque longo para o preto.
-        """
-        # Rei
+        # Move torre
         self.executar_movimento(
             mov=Movimento(
-                origem=Engine.ROQUE_LONGO_PRETO['origem_rei'],
-                destino=Engine.ROQUE_LONGO_PRETO['destino_rei']
-            ),
-            interno=True
-        )
-        # Torre
-        self.executar_movimento(
-            mov=Movimento(
-                origem=Engine.ROQUE_LONGO_PRETO['origem_torre'],
-                destino=Engine.ROQUE_LONGO_PRETO['destino_torre']
-            ),
-            interno=True
-        )
-
-
-    def executar_roque_curto_branco(self):
-        """
-        Executa o roque curto para o branco.
-        """
-        # Rei
-        self.executar_movimento(
-            mov=Movimento(
-                origem=Engine.ROQUE_CURTO_BRANCO['origem_rei'],
-                destino=Engine.ROQUE_CURTO_BRANCO['destino_rei']
-            ),
-            interno=True
-        )
-        # Torre
-        self.executar_movimento(
-            mov=Movimento(
-                origem=Engine.ROQUE_CURTO_BRANCO['origem_torre'],
-                destino=Engine.ROQUE_CURTO_BRANCO['destino_torre']
-            ),
-            interno=True
-        )
-
-
-    def executar_roque_longo_branco(self):
-        """
-        Executa o roque longo para o branco.
-        """
-        # Rei
-        self.executar_movimento(
-            mov=Movimento(
-                origem=Engine.ROQUE_LONGO_BRANCO['origem_rei'],
-                destino=Engine.ROQUE_LONGO_BRANCO['destino_rei']
-            ),
-            interno=True
-        )
-        # Torre
-        self.executar_movimento(
-            mov=Movimento(
-                origem=Engine.ROQUE_LONGO_BRANCO['origem_torre'],
-                destino=Engine.ROQUE_LONGO_BRANCO['destino_torre']
+                origem=dados["origem_torre"],
+                destino=dados["destino_torre"]
             ),
             interno=True
         )
@@ -587,7 +478,12 @@ class Engine:
                 else:
                     cor = Cor.BRANCO if ch.isupper() else Cor.PRETO
                     tipo = ch.lower()
-                    self.matriz[i, j] = self.criar_peca(tipo=tipo, cor=cor, pos=[i, j])
+                    self.matriz[i, j] = self.criar_peca(
+                        tipo=tipo,
+                        cor=cor,
+                        pos=[i, j]
+                    )
+
                     j += 1
 
         self.turno = turno
@@ -615,8 +511,14 @@ class Engine:
                 l_vizinho = linha_ep + direcao
                 if self.lc_valido(l_vizinho, c_vizinho):
                     p = self.matriz[l_vizinho, c_vizinho]
-                    if isinstance(p, Peao) and p.cor != self.matriz[self.posicao_alvo_en_passant].cor:
-                        self.posicao_peao_en_passant.append((l_vizinho, c_vizinho))
+                    if (
+                        isinstance(p, Peao) and
+                        p.cor != self.matriz[self.posicao_alvo_en_passant].cor
+                    ):
+                        self.posicao_peao_en_passant.append((
+                            l_vizinho,
+                            c_vizinho
+                        ))
 
 
     def criar_peca(self, tipo: str, cor: str, pos: list[int]) -> Peca:
@@ -670,7 +572,7 @@ class Engine:
                 if isinstance(p, Rei):
                     if p.cor == cor:
                         return (li, co)
-        return None
+        return None 
 
 
     def gerar_mov_peca(self, p: Peca) -> None:
@@ -773,30 +675,20 @@ class Engine:
         cor: str,
         mov: list
     ) -> list[tuple[int, int], TipoMov]:
-        """
-        Adiciona os movimentos de roque para o rei na lista de movimentos possíveis.
 
-        Args:
-            cor (str): Cor do rei.
-            mov (list): Lista de movimentos.
+        if self.verificar_roque(cor, "curto"):
+            destino = (
+                self.ROQUES[(cor, "curto")]["destino_rei"]
+            )
 
-        Returns:
-            list: Lista de movimentos com os movimentos de roque adicionados.
-        """
-        if cor == Cor.BRANCO:
-            if self.roque_curto_branco:
-                if self.verificar_roque_curto_branco():
-                    mov.append(((7, 6), TipoMov.ROQUE_CURTO))
-            if self.roque_longo_branco:
-                if self.verificar_roque_longo_branco():
-                    mov.append(((7, 2), TipoMov.ROQUE_LONGO))
-        else:
-            if self.roque_curto_preto:
-                if self.verificar_roque_curto_preto():
-                    mov.append(((0, 6), TipoMov.ROQUE_CURTO))
-            if self.roque_longo_preto:
-                if self.verificar_roque_longo_preto():
-                    mov.append(((0, 2),TipoMov.ROQUE_LONGO))
+            mov.append((destino, TipoMov.ROQUE_CURTO))
+
+        if self.verificar_roque(cor, "longo"):
+            destino = (
+                self.ROQUES[(cor, "longo")]["destino_rei"]
+            )
+
+            mov.append((destino, TipoMov.ROQUE_LONGO))
 
         return mov
 
