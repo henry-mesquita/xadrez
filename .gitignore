@@ -183,3 +183,5 @@ cython_debug/
 .vscode
 
 unico_arquivo.py
+
+/img
