@@ -102,7 +102,10 @@ class Engine:
         self.roque_curto_preto:     bool = True
         self.roque_longo_preto:     bool = True
 
-        self.carregar_posicao_fen(fen=FEN_INICIAL)
+        self.halfmove_clock: int = 0
+        self.fullmove_number: int = 1
+
+        self.carregar_posicao_fen(fen='8/8/8/4p3/3P4/k7/8/K7 w - - 99 60')
         self.turno = Cor.BRANCO
 
         self.en_passant: None | list[tuple[int, int], TipoMov] = None
@@ -165,70 +168,72 @@ class Engine:
 
 
     def executar_movimento(self, mov: Movimento, interno: bool=False) -> bool:
-        """
-        Executa um movimento.
-
-        Args:
-            mov (Movimento): Objeto contendo as coordenadas de origem e destino.
-            interno (bool): Indica se está numa recursão ou não.
-
-        Returns:
-            bool: True se o movimento for valido, False caso contrário.
-        """
         p = self.matriz[mov.origem[0], mov.origem[1]]
 
         if p is None:
             return False
         
+        captura = (
+            self.matriz[mov.destino[0], mov.destino[1]]
+            is not None
+        )
+
+        en_passant_antigo = self.en_passant
+        peoes_en_passant_antigo = self.posicao_peao_en_passant.copy()
+        alvo_en_passant_antigo = self.posicao_alvo_en_passant
+
+        self.en_passant = None
+        self.posicao_peao_en_passant = []
+        self.posicao_alvo_en_passant = None
+
         if isinstance(p, Torre):
             if p.cor == Cor.BRANCO:
                 if mov.origem[1] == 0:
                     self.roque_longo_branco = False
                 elif mov.origem[1] == 7:
                     self.roque_curto_branco = False
+
             elif p.cor == Cor.PRETO:
                 if mov.origem[1] == 0:
                     self.roque_longo_preto = False
                 elif mov.origem[1] == 7:
                     self.roque_curto_preto = False
 
-
         if isinstance(p, Rei) and not interno:
             distancia_c = mov.destino[1] - mov.origem[1]
+
             if abs(distancia_c) == 2:
                 if self.verificar_e_aplicar_roque(p.cor, distancia_c):
                     self.mudar_turno()
                     self.limpar_movimentos()
                     return True
-                else:
-                    return False
+
+                return False
+
             if p.cor == Cor.BRANCO:
                 self.roque_curto_branco = False
                 self.roque_longo_branco = False
-            elif p.cor == Cor.PRETO:
+
+            else:
                 self.roque_curto_preto = False
                 self.roque_longo_preto = False
 
         if isinstance(p, Peao):
             distancia_l = mov.destino[0] - mov.origem[0]
 
+            if (
+                p.posicao in peoes_en_passant_antigo
+                and
+                en_passant_antigo is not None
+                and
+                mov.destino == en_passant_antigo[0]
+            ):
+                self.matriz[alvo_en_passant_antigo] = None
+
             if abs(distancia_l) == 2:
                 linha, coluna = mov.destino
 
-                posicao_lado_esquerdo = (
-                    linha,
-                    coluna - 1
-                )
-
-                posicao_lado_direito = (
-                    linha,
-                    coluna + 1
-                )
-
-                if p.cor == Cor.PRETO:
-                    direcao = -1
-                else:
-                    direcao = 1
+                direcao = -1 if p.cor == Cor.PRETO else 1
 
                 self.en_passant = [
                     (
@@ -238,44 +243,43 @@ class Engine:
                     TipoMov.CAPTURA
                 ]
 
-                self.posicao_peao_en_passant = []
                 self.posicao_alvo_en_passant = mov.destino
 
-                if self.lc_valido(posicao_lado_esquerdo[0], posicao_lado_esquerdo[1]):
-                    lado_esquerdo = self.matriz[posicao_lado_esquerdo]
-                    if isinstance(lado_esquerdo, Peao) and lado_esquerdo.cor != p.cor:
-                        self.posicao_peao_en_passant.append(posicao_lado_esquerdo)
+                for dc in (-1, 1):
+                    c_vizinho = coluna + dc
 
-                if self.lc_valido(posicao_lado_direito[0], posicao_lado_direito[1]):
-                    lado_direito = self.matriz[posicao_lado_direito]
-                    if isinstance(lado_direito, Peao) and lado_direito.cor != p.cor:
-                        self.posicao_peao_en_passant.append(posicao_lado_direito)
+                    if self.lc_valido(linha, c_vizinho):
+                        vizinho = self.matriz[linha, c_vizinho]
 
-            if (
-                p.posicao in self.posicao_peao_en_passant
-                and
-                self.en_passant is not None
-                and
-                mov.destino == self.en_passant[0]
-                ):
-                self.matriz[self.posicao_alvo_en_passant] = None
-                self.en_passant = None
-                self.posicao_alvo_en_passant = None
-                self.posicao_peao_en_passant = []
-            elif abs(distancia_l) != 2:
-                self.en_passant = None
-                self.posicao_peao_en_passant = []
-                self.posicao_alvo_en_passant = None
+                        if (
+                            isinstance(vizinho, Peao)
+                            and
+                            vizinho.cor != p.cor
+                        ):
+                            self.posicao_peao_en_passant.append(
+                                (linha, c_vizinho)
+                            )
 
         self.matriz[mov.destino[0], mov.destino[1]] = p
         self.matriz[mov.origem[0], mov.origem[1]] = None
+
         p.posicao = mov.destino
 
         if not interno:
             self.limpar_movimentos()
 
+        if isinstance(p, Peao) or captura:
+            self.halfmove_clock = 0
+        else:
+            self.halfmove_clock += 1
+
         self.mudar_turno()
-        self._verificar_fim_de_jogo(self.turno)
+
+        if self.turno == Cor.BRANCO:
+            self.fullmove_number += 1
+
+        if self._verificar_fim_de_jogo(self.turno):
+            self.finalizado = True
 
         return True
 
@@ -342,31 +346,81 @@ class Engine:
         return self.vitoria_brancas or self.vitoria_negras or self.empate
 
 
+    def _verificar_xeque_mate_ou_afogamento(
+        self,
+        cor_atual: str
+    ) -> bool:
+        """
+        Verifica xeque-mate ou afogamento.
+
+        Args:
+            cor_atual (str): Cor do jogador atual.
+
+        Returns:
+            bool: True se o jogo terminou.
+        """
+        if self._tem_movimentos_legais(cor_atual):
+            return False
+
+        if self.verificar_xeque(cor_atual):
+            if cor_atual == Cor.BRANCO:
+                self.vitoria_negras = True
+                cor_vencedora = "Pretas"
+            else:
+                self.vitoria_brancas = True
+                cor_vencedora = "Brancas"
+
+            print(f"Xeque-Mate! Vitória das {cor_vencedora}.")
+        else:
+            self.empate = True
+            print("Empate por afogamento (Stalemate).")
+
+        return True
+
+
+    def _verificar_empate_50_lances(self) -> bool:
+        """
+        Verifica empate pela regra dos 50 lances.
+
+        Returns:
+            bool: True se houver empate.
+        """
+        if self.halfmove_clock >= 100:
+            self.empate = True
+            print("Empate pela regra dos 50 lances.")
+            return True
+
+        return False
+
+
+    def _verificar_empate_insuficiencia_material(self) -> bool:
+        """
+        Verifica empate por insuficiência de material.
+
+        Returns:
+            bool: True se houver empate.
+        """
+        if self._verificar_insuficiencia_material():
+            self.empate = True
+            print("Empate por insuficiência de material.")
+            return True
+
+        return False
+
+
     def _verificar_fim_de_jogo(self, cor_atual: str) -> None:
         """
         Agrega todas as checagens de fim de partida.
         """
-        if not self._tem_movimentos_legais(cor_atual):
-            if self.verificar_xeque(cor_atual):
-                if cor_atual == Cor.BRANCO:
-                    self.vitoria_negras = True
-                else:
-                    self.vitoria_brancas = True
-                
-                if cor_atual == Cor.BRANCO:
-                    cor = 'Pretas'
-                else:
-                    cor = 'Brancas'
 
-                print(f"Xeque-Mate! Vitória das {cor}.")
-            else:
-                self.empate = True
-                print("Empate por afogamento (Stalemate).")
+        if self._verificar_xeque_mate_ou_afogamento(cor_atual):
             return
 
-        if self._verificar_insuficiencia_material():
-            self.empate = True
-            print("Empate por insuficiência de material.")
+        if self._verificar_empate_insuficiencia_material():
+            return
+
+        if self._verificar_empate_50_lances():
+            return
 
 
     def verificar_e_aplicar_roque(
@@ -488,12 +542,19 @@ class Engine:
         turno, direitos de roque e estado de en passant.
         """
         partes = fen.strip().split()
-        if len(partes) < 4:
+        if len(partes) < 6:
             raise ValueError(
                 "FEN inválida: deve conter pelo menos os 4 campos iniciais."
             )
 
-        tabuleiro_str, turno, roques, ep_square = partes[:4]
+        (
+            tabuleiro_str,
+            turno,
+            roques,
+            ep_square,
+            halfmove_clock,
+            fullmove_number
+        ) = partes[:6]
 
         self.matriz.fill(None)
 
@@ -520,6 +581,9 @@ class Engine:
                     j += 1
 
         self.turno = turno
+
+        self.halfmove_clock = int(halfmove_clock)
+        self.fullmove_number = int(fullmove_number)
 
         self.roque_curto_branco = 'K' in roques
         self.roque_longo_branco = 'Q' in roques
@@ -552,6 +616,85 @@ class Engine:
                             l_vizinho,
                             c_vizinho
                         ))
+
+
+    def exportar_posicao_fen(self) -> str:
+        """
+        Exporta a posição atual no padrão FEN.
+
+        Returns:
+            str: String FEN da posição atual.
+        """
+
+        ranks = []
+
+        for linha in self.matriz:
+            rank = ""
+            vazias = 0
+
+            for peca in linha:
+                if peca is None:
+                    vazias += 1
+                    continue
+
+                if vazias > 0:
+                    rank += str(vazias)
+                    vazias = 0
+
+                simbolo = peca.tipo.value
+
+                if peca.cor == Cor.BRANCO:
+                    simbolo = simbolo.upper()
+
+                rank += simbolo
+
+            if vazias > 0:
+                rank += str(vazias)
+
+            ranks.append(rank)
+
+        tabuleiro_str = "/".join(ranks)
+
+        turno = self.turno
+
+        roques = ""
+
+        if self.roque_curto_branco:
+            roques += "K"
+
+        if self.roque_longo_branco:
+            roques += "Q"
+
+        if self.roque_curto_preto:
+            roques += "k"
+
+        if self.roque_longo_preto:
+            roques += "q"
+
+        if roques == "":
+            roques = "-"
+
+        ep_square = "-"
+
+        if self.en_passant is not None:
+            linha, coluna = self.en_passant[0]
+
+            arquivo = chr(ord("a") + coluna)
+            rank = str(8 - linha)
+
+            ep_square = f"{arquivo}{rank}"
+
+        halfmove_clock = self.halfmove_clock
+        fullmove_number = self.fullmove_number
+
+        return (
+            f"{tabuleiro_str} "
+            f"{turno} "
+            f"{roques} "
+            f"{ep_square} "
+            f"{halfmove_clock} "
+            f"{fullmove_number}"
+        )
 
 
     def criar_peca(self, tipo: str, cor: str, pos: list[int]) -> Peca:

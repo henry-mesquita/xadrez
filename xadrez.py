@@ -104,7 +104,6 @@ class Xadrez:
 
         if sucesso:
             self.engine.executar_movimento(mov=mov)
-
             self.renderer.sincronizar_todas_pecas()
 
             if DEBUG:
