@@ -1,5 +1,5 @@
 from constantes import *
-from pecas.peca import Peca
+from pecas.peca import Peca, TipoPeca
 
 
 class Bispo(Peca):
@@ -15,7 +15,7 @@ class Bispo(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo: str = 'b'
+        self.tipo: TipoPeca = TipoPeca.BISPO
         self.pontuacao: int = 3
 
 

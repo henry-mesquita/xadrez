@@ -1,5 +1,5 @@
 from constantes import *
-from pecas.peca import Peca
+from pecas.peca import Peca, TipoPeca
 
 
 class Cavalo(Peca):
@@ -14,8 +14,8 @@ class Cavalo(Peca):
         posicao: tuple[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo: str       = 'n'
-        self.pontuacao: int  = 3
+        self.tipo: TipoPeca = TipoPeca.CAVALO
+        self.pontuacao: int = 3
 
 
     def gerar_pseudo_movimentos(

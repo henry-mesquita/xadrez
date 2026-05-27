@@ -1,5 +1,5 @@
 from constantes import *
-from pecas.peca import Peca
+from pecas.peca import Peca, Cor, TipoPeca
 
 
 class Peao(Peca):
@@ -14,8 +14,8 @@ class Peao(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo: str = 'p'
-        self.pontuacao: int  = 1
+        self.tipo: TipoPeca = TipoPeca.PEAO
+        self.pontuacao: int = 1
 
 
     def gerar_pseudo_movimentos(
@@ -34,7 +34,7 @@ class Peao(Peca):
         """
         mov: list[tuple[int, int]] = []
 
-        if self.cor == 'w': # se cor for branco
+        if self.cor == Cor.BRANCO:
             
             offsets_peao = [
                 (-1, 0)
@@ -47,7 +47,7 @@ class Peao(Peca):
 
             if lc[0] == 6:
                 offsets_peao.append((-2, 0))
-        else: # se cor for preto
+        else:
             offsets_peao = [
                 (1, 0)
             ]

@@ -1,5 +1,5 @@
 from constantes import *
-from pecas.peca import Peca
+from pecas.peca import Peca, TipoPeca
 
 
 class Torre(Peca):
@@ -15,7 +15,7 @@ class Torre(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo: str      = 'r'
+        self.tipo: TipoPeca = TipoPeca.TORRE
         self.pontuacao: int = 5
 
 

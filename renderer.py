@@ -7,7 +7,8 @@ from engine import Engine, TipoMov
 from pprint import pprint
 
 # TODO: Promoção de peão
-# TODO: Regra dos 30 lances
+# TODO: Regra dos 50 lances (ou 100 meios-lances)
+# TODO: Empate por 3 repetições
 
 
 class Renderer:
@@ -66,7 +67,7 @@ class Renderer:
         self.tela = pg.display.set_mode(size=TAMANHO_TELA)
         self.surf_base_tabuleiro = Surface(size=TAM_TABULEIRO).convert()
         self.fonte = pg.font.SysFont(name=None, size=30)
-        pg.display.set_caption('Xadrez')
+        pg.display.set_caption('chess.py')
 
         icon_path = self.IMG_DIR / 'cavalo_preto.png'
 
@@ -95,7 +96,7 @@ class Renderer:
         Args:
             peca (Peca): Instância da peça.
         """
-        chave = f"{peca.cor}{peca.tipo}"
+        chave = f"{peca.cor}{peca.tipo.value}"
         peca.sprite = self.cache_sprites[chave]
         
         self.sincronizar_peca_ao_tabuleiro(peca=peca)
@@ -432,9 +433,9 @@ class Renderer:
                         char = " "
                 else:
                     if peca.cor == Cor.BRANCO:
-                        char = peca.tipo.upper()
+                        char = peca.tipo.value.upper()
                     else:
-                        char = peca.tipo.lower()
+                        char = peca.tipo.value.lower()
                 
                 linha_str += f" {char} |"
             

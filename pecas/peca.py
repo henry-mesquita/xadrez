@@ -1,9 +1,20 @@
 from dataclasses import dataclass
+from enum import Enum, auto
+
 
 @dataclass(frozen=True)
 class Cor:
     BRANCO = 'w'
     PRETO = 'b'
+
+
+class TipoPeca(Enum):
+    PEAO    = 'p'
+    TORRE   = 'r'
+    CAVALO  = 'n'
+    BISPO   = 'b'
+    DAMA    = 'q'
+    REI     = 'k'
 
 
 class Peca:
@@ -27,7 +38,7 @@ class Peca:
             TAMANHO_PECA (int): Tamanho da peça.
             posicao (list[int, int]): Posição da peça.
         """
-        if cor.lower() not in ('b', 'w'):
+        if cor.lower() not in (Cor.BRANCO, Cor.PRETO):
             raise ValueError("Cor tem que estar em: ('b', 'w')")
         
         self.cor: str                   = cor.lower()

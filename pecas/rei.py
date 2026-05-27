@@ -1,5 +1,5 @@
 from constantes import *
-from pecas.peca import Peca
+from pecas.peca import Peca, TipoPeca
 
 
 class Rei(Peca):
@@ -14,7 +14,7 @@ class Rei(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo: str          = 'k'
+        self.tipo: TipoPeca     = TipoPeca.REI
         self.pontuacao: float   = float('inf')
 
 

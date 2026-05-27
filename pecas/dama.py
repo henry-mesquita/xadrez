@@ -1,5 +1,5 @@
 from constantes import *
-from pecas.peca import Peca
+from pecas.peca import Peca, TipoPeca
 
 
 class Dama(Peca):
@@ -14,8 +14,8 @@ class Dama(Peca):
         posicao: list[int, int]
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo: str          = 'q'
-        self.pontuacao: int     = 0
+        self.tipo: TipoPeca = TipoPeca.DAMA
+        self.pontuacao: int = 0
 
 
     def gerar_pseudo_movimentos(
