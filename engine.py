@@ -12,6 +12,26 @@ from enum import Enum, auto
 
 
 @dataclass
+class EstadoHistorico:
+    """
+    Guarda o estado necessário para reverter um lance.
+    """
+    movimento: Movimento
+    peca_capturada: Peca | None
+    pos_peca_capturada: tuple[int, int] | None
+    roque_curto_branco: bool
+    roque_longo_branco: bool
+    roque_curto_preto: bool
+    roque_longo_preto: bool
+    en_passant: list | None
+    posicao_peao_en_passant: list[tuple[int, int]]
+    posicao_alvo_en_passant: tuple[int, int] | None
+    halfmove_clock: int
+    ultimo_mov: Movimento | None
+    foi_promocao: bool
+
+
+@dataclass
 class Movimento:
     """
     Representa um movimento de peça.
@@ -120,8 +140,9 @@ class Engine:
 
         self.casa_promocao: tuple[int, int] | None = None
         self.aguardando_promocao = False
-
         self.ultimo_mov: Movimento | None = None
+
+        self.historico: list[EstadoHistorico] = []
 
 
     def movimento_possivel(self, mov: Movimento) -> bool:
@@ -174,128 +195,262 @@ class Engine:
         return False
 
 
-    def executar_movimento(self, mov: Movimento, interno: bool=False) -> bool:
+    def executar_movimento(
+            self,
+            mov: Movimento,
+            interno: bool = False,
+            promocao_alvo: TipoPeca | None = None
+    ) -> bool:
         """
-        Executa um movimento, atualizando o tabuleiro e os movimentos possíveis.
+        Executa um movimento.
+
         Args:
             mov (Movimento): Objeto contendo as coordenadas de origem e destino.
-            interno (bool): True se o movimento foi executado pela engine, False caso contrário.
+            interno (bool): True se o movimento foi executado internamente, False caso contrário.
+            promocao_alvo (TipoPeca): Tipo da peça para promoção automática em testes.
+
         Returns:
-            bool: True se o movimento for valido, False caso contrário.
+            bool: True se o movimento foi executado, False caso contrário.
         """
-
-        self.ultimo_mov = mov
-
         p = self.matriz[mov.origem[0], mov.origem[1]]
         if p is None:
             return False
+        
+        peca_destino = self.matriz[mov.destino[0], mov.destino[1]]
+        peca_capturada = peca_destino
+        pos_captura = mov.destino
+
+        if isinstance(p, Peao):
+            if self.en_passant is not None:
+                if mov.destino == self.en_passant[0]:
+                    pos_captura = self.posicao_alvo_en_passant
+                    peca_capturada = self.matriz[pos_captura[0], pos_captura[1]]
+
+        foi_promocao = False
+        if isinstance(p, Peao):
+            if mov.destino[0] == 0 or mov.destino[0] == 7:
+                foi_promocao = True
+
+        self.historico.append(EstadoHistorico(
+            movimento=mov,
+            peca_capturada=peca_capturada,
+            pos_peca_capturada=pos_captura,
+            roque_curto_branco=self.roque_curto_branco,
+            roque_longo_branco=self.roque_longo_branco,
+            roque_curto_preto=self.roque_curto_preto,
+            roque_longo_preto=self.roque_longo_preto,
+            en_passant=self.en_passant,
+            posicao_peao_en_passant=self.posicao_peao_en_passant.copy(),
+            posicao_alvo_en_passant=self.posicao_alvo_en_passant,
+            halfmove_clock=self.halfmove_clock,
+            ultimo_mov=self.ultimo_mov,
+            foi_promocao=foi_promocao
+        ))
+
+        if peca_capturada is not None:
+            self.matriz[pos_captura[0], pos_captura[1]] = None
 
         if not interno:
             self.limpar_movimentos()
-
-        en_passant_antigo = self.en_passant
-        peoes_en_passant_antigo = self.posicao_peao_en_passant.copy()
-        alvo_en_passant_antigo = self.posicao_alvo_en_passant
 
         self.en_passant = None
         self.posicao_peao_en_passant = []
         self.posicao_alvo_en_passant = None
 
+        # Atualizar direitos de roque (Movimento de Torre ou Captura em Cantos)
         if isinstance(p, Torre):
-            if p.cor == Cor.BRANCO:
-                if mov.origem[1] == 0:
-                    self.roque_longo_branco = False
-                elif mov.origem[1] == 7:
-                    self.roque_curto_branco = False
+            self._remover_direito_roque(p.cor, mov.origem[1])
+        
+        # REGRA CRUCIAL: Captura em cantos remove direitos independente do tipo da peça
+        if mov.destino == (7, 7): self.roque_curto_branco = False
+        elif mov.destino == (7, 0): self.roque_longo_branco = False
+        elif mov.destino == (0, 7): self.roque_curto_preto = False
+        elif mov.destino == (0, 0): self.roque_longo_preto = False
 
-            elif p.cor == Cor.PRETO:
-                if mov.origem[1] == 0:
-                    self.roque_longo_preto = False
-                elif mov.origem[1] == 7:
-                    self.roque_curto_preto = False
-
-        if isinstance(p, Rei) and not interno:
+        if isinstance(p, Rei):
             distancia_c = mov.destino[1] - mov.origem[1]
-
             if abs(distancia_c) == 2:
-                if self.verificar_e_aplicar_roque(p.cor, distancia_c):
-                    self.mudar_turno()
-                    self.limpar_movimentos()
-                    return True
-
-                return False
-
+                self._mover_torre_roque(p.cor, distancia_c)
+            
             if p.cor == Cor.BRANCO:
                 self.roque_curto_branco = False
                 self.roque_longo_branco = False
-
             else:
                 self.roque_curto_preto = False
                 self.roque_longo_preto = False
 
         if isinstance(p, Peao):
             distancia_l = mov.destino[0] - mov.origem[0]
-
-            if (
-                p.posicao in peoes_en_passant_antigo
-                and
-                en_passant_antigo is not None
-                and
-                mov.destino == en_passant_antigo[0]
-            ):
-                self.matriz[alvo_en_passant_antigo] = None
-
             if abs(distancia_l) == 2:
                 linha, coluna = mov.destino
-
-                direcao = -1 if p.cor == Cor.PRETO else 1
-
-                self.en_passant = [
-                    (
-                        linha + direcao,
-                        coluna
-                    ),
-                    TipoMov.CAPTURA
-                ]
-
+                if p.cor == Cor.BRANCO:
+                    direcao = 1
+                else:
+                    direcao = -1
+                
+                self.en_passant = [(linha + direcao, coluna), TipoMov.CAPTURA]
                 self.posicao_alvo_en_passant = mov.destino
-
                 for dc in (-1, 1):
-                    c_vizinho = coluna + dc
-
-                    if self.lc_valido(linha, c_vizinho):
-                        vizinho = self.matriz[linha, c_vizinho]
-
-                        if (
-                            isinstance(vizinho, Peao)
-                            and
-                            vizinho.cor != p.cor
-                        ):
-                            self.posicao_peao_en_passant.append(
-                                (linha, c_vizinho)
-                            )
+                    c_viz = coluna + dc
+                    if self.lc_valido(linha, c_viz):
+                        v = self.matriz[linha, c_viz]
+                        if isinstance(v, Peao):
+                            if v.cor != p.cor:
+                                self.posicao_peao_en_passant.append((linha, c_viz))
 
         self.matriz[mov.destino[0], mov.destino[1]] = p
         self.matriz[mov.origem[0], mov.origem[1]] = None
-        p.posicao = mov.destino
+        p.posicao = (mov.destino[0], mov.destino[1])
+        self.ultimo_mov = mov
 
-        promocao_ocorrendo = False
-        if not interno and isinstance(p, Peao):
-            if (p.cor == Cor.BRANCO and mov.destino[0] == 0) or \
-            (p.cor == Cor.PRETO and mov.destino[0] == 7):
+        if foi_promocao:
+            tipo_para_promover = promocao_alvo
+            if tipo_para_promover is None:
+                if interno:
+                    tipo_para_promover = TipoPeca.DAMA
+            
+            if tipo_para_promover is not None:
+                self.matriz[mov.destino[0], mov.destino[1]] = self.criar_peca(
+                    tipo=tipo_para_promover.value,
+                    cor=p.cor,
+                    pos=[mov.destino[0], mov.destino[1]]
+                )
+            else:
                 self.aguardando_promocao = True
                 self.casa_promocao = mov.destino
-                promocao_ocorrendo = True
-
-        if promocao_ocorrendo:
-            return True 
+                return True 
 
         self._finalizar_turno(
-            captura=(self.matriz[mov.destino[0],mov.destino[1]] is not None),
+            captura=(peca_capturada is not None),
             peao=isinstance(p, Peao),
             interno=interno
         )
         return True
+
+
+    def desfazer_movimento(self) -> None:
+        """
+        Reverte o último movimento realizado, restaurando o estado anterior.
+        """
+        if len(self.historico) == 0:
+            return
+
+        estado = self.historico.pop()
+        mov = estado.movimento
+
+        if self.turno == Cor.BRANCO:
+            self.fullmove_number -= 1
+        self.mudar_turno()
+
+        # Restaurar flags de estado
+        self.roque_curto_branco = estado.roque_curto_branco
+        self.roque_longo_branco = estado.roque_longo_branco
+        self.roque_curto_preto = estado.roque_curto_preto
+        self.roque_longo_preto = estado.roque_longo_preto
+        self.en_passant = estado.en_passant
+        self.posicao_peao_en_passant = estado.posicao_peao_en_passant
+        self.posicao_alvo_en_passant = estado.posicao_alvo_en_passant
+        self.halfmove_clock = estado.halfmove_clock
+        self.ultimo_mov = estado.ultimo_mov
+        self.aguardando_promocao = False
+
+        # Peça que se moveu
+        p = self.matriz[mov.destino[0], mov.destino[1]]
+
+        # Se foi promoção, p é a Dama. Precisamos transformá-la em Peão de volta.
+        if estado.foi_promocao:
+            p = self.criar_peca(tipo='p', cor=p.cor, pos=[mov.origem[0], mov.origem[1]])
+
+        self.matriz[mov.origem[0], mov.origem[1]] = p
+        p.posicao = (mov.origem[0], mov.origem[1])
+        self.matriz[mov.destino[0], mov.destino[1]] = None
+
+        # Restaurar peça capturada (se houver)
+        if estado.peca_capturada is not None:
+            pos_cap = estado.pos_peca_capturada
+            self.matriz[pos_cap[0], pos_cap[1]] = estado.peca_capturada
+            # Restaurar a coordenada interna da peça capturada!
+            estado.peca_capturada.posicao = (pos_cap[0], pos_cap[1])
+
+        # Se foi Roque, desfazer movimento da Torre
+        if isinstance(p, Rei):
+            distancia_c = mov.destino[1] - mov.origem[1]
+            if abs(distancia_c) == 2:
+                l = mov.origem[0]
+                if mov.destino[1] == 6: # Curto
+                    torre = self.matriz[l, 5]
+                    self.matriz[l, 7] = torre
+                    self.matriz[l, 5] = None
+                    if torre is not None:
+                        torre.posicao = (l, 7)
+                else: # Longo
+                    torre = self.matriz[l, 3]
+                    self.matriz[l, 0] = torre
+                    self.matriz[l, 3] = None
+                    if torre is not None:
+                        torre.posicao = (l, 0)
+
+
+    def _testar_movimento(
+        self,
+        mov_destino: tuple[int, int],
+        origem: tuple[int, int],
+        cor: str
+    ) -> bool:
+        """
+        Verifica se um movimento dado eh valido.
+
+        Args:
+            mov_destino (tuple[int, int]): Coordenadas de destino.
+            tipo (TipoMov): Tipo de movimento.
+            origem (tuple[int, int]): Coordenadas de origem.
+            cor (str): Cor do jogador.
+
+        Returns:
+            bool: True se o movimento for valido, False caso contrário.
+        """
+        self.executar_movimento(Movimento(origem=origem, destino=mov_destino), interno=True)
+        em_xeque = self.verificar_xeque(cor)
+        self.desfazer_movimento()
+
+        return not em_xeque
+
+
+    def _remover_direito_roque(self, cor: Cor, coluna: int) -> None:
+        """
+        Auxiliar para tirar roque se a torre mover ou morrer.
+
+        Args:
+            cor (Cor): Cor do jogador.
+            coluna (int): Coluna da torre.
+        """
+        if cor == Cor.BRANCO:
+            if coluna == 0: self.roque_longo_branco = False
+            if coluna == 7: self.roque_curto_branco = False
+        else:
+            if coluna == 0: self.roque_longo_preto = False
+            if coluna == 7: self.roque_curto_preto = False
+
+
+    def _mover_torre_roque(self, cor: Cor, distancia_c: int) -> None:
+        """
+        Move a torre durante o roque sem chamar finalizar_turno.
+
+        Args:
+            cor (Cor): Cor do jogador.
+            distancia_c (int): Diferença de colunas entre a torre e o rei.
+        """
+        l = 7 if cor == Cor.BRANCO else 0
+        if distancia_c > 0: # Curto
+            torre = self.matriz[l, 7]
+            self.matriz[l, 5] = torre
+            self.matriz[l, 7] = None
+            if torre: torre.posicao = (l, 5)
+        else: # Longo
+            torre = self.matriz[l, 0]
+            self.matriz[l, 3] = torre
+            self.matriz[l, 0] = None
+            if torre: torre.posicao = (l, 3)
 
 
     def _finalizar_turno(self, captura: bool, peao: bool, interno: bool) -> None:
@@ -341,7 +496,6 @@ class Engine:
     def _tem_movimentos_legais(self, cor: str) -> bool:
         """
         Verifica se o jogador da cor atual possui pelo menos um movimento legal.
-        Usa a estratégia de saída antecipada para performance.
 
         Args:
             cor (str): Cor do jogador.
@@ -358,14 +512,11 @@ class Engine:
                     
                     if isinstance(p, Rei):
                         self._adicionar_roques(cor, candidatos)
-                    if (
-                        isinstance(p, Peao) and
-                        p.posicao in self.posicao_peao_en_passant
-                    ):
+                    if isinstance(p, Peao) and p.posicao in self.posicao_peao_en_passant:
                         self._adicionar_en_passant(candidatos)
                     
-                    for destino, tipo in candidatos:
-                        if self._testar_movimento(destino, tipo, (li, co), cor):
+                    for destino, _ in candidatos:
+                        if self._testar_movimento(destino, (li, co), cor):
                             return True
                             
         return False
@@ -548,16 +699,13 @@ class Engine:
             bool: True se a casa estiver sob ataque, False caso contrário.
         """
         pos_original = self.achar_lc_rei(cor_rei)
-        rei = self.matriz[pos_original[0], pos_original[1]]
-        
-        backup = self.matriz[l, c]
-        self.matriz[pos_original[0], pos_original[1]] = None
-        self.matriz[l, c] = rei
-        
+        self.executar_movimento(Movimento(
+            origem=pos_original,
+            destino=(l, c)),
+            interno=True
+        )
         atacada = self.verificar_xeque(cor_rei)
-        
-        self.matriz[l, c] = backup
-        self.matriz[pos_original[0], pos_original[1]] = rei
+        self.desfazer_movimento()
         return atacada
 
 
@@ -636,53 +784,42 @@ class Engine:
 
     def carregar_posicao_fen(self, fen: str) -> None:
         """
-        Carrega uma posição completa no padrão FEN, atualizando o tabuleiro,
-        turno, direitos de roque e estado de en passant.
+        Carrega uma posição de um FEN.
+
+        Args:
+            fen (str): FEN da posição.
         """
         partes = fen.strip().split()
-        if len(partes) < 6:
-            raise ValueError(
-                "FEN inválida: deve conter pelo menos os 4 campos iniciais."
-            )
-
-        (
-            tabuleiro_str,
-            turno,
-            roques,
-            ep_square,
-            halfmove_clock,
-            fullmove_number
-        ) = partes[:6]
+        tabuleiro_str, turno, roques, ep_square = partes[:4]
+        
+        if len(partes) > 4:
+            self.halfmove_clock = int(partes[4])
+        else:
+            self.halfmove_clock = 0
+            
+        if len(partes) > 5:
+            self.fullmove_number = int(partes[5])
+        else:
+            self.fullmove_number = 1
 
         self.matriz.fill(None)
 
         ranks = tabuleiro_str.split('/')
-        if len(ranks) != 8:
-            raise ValueError(
-                "FEN inválida: piece placement deve ter 8 ranks."
-            )
-
         for i, rank in enumerate(ranks):
             j = 0
             for ch in rank:
                 if ch.isdigit():
                     j += int(ch)
                 else:
-                    cor = Cor.BRANCO if ch.isupper() else Cor.PRETO
-                    tipo = ch.lower()
+                    cor_peca = Cor.BRANCO if ch.isupper() else Cor.PRETO
                     self.matriz[i, j] = self.criar_peca(
-                        tipo=tipo,
-                        cor=cor,
+                        tipo=ch.lower(),
+                        cor=cor_peca,
                         pos=[i, j]
                     )
-
                     j += 1
 
         self.turno = turno
-
-        self.halfmove_clock = int(halfmove_clock)
-        self.fullmove_number = int(fullmove_number)
-
         self.roque_curto_branco = 'K' in roques
         self.roque_longo_branco = 'Q' in roques
         self.roque_curto_preto  = 'k' in roques
@@ -693,27 +830,23 @@ class Engine:
         self.posicao_peao_en_passant = []
 
         if ep_square != '-':
-            coluna_ep = ord(ep_square[0]) - ord('a')
-            linha_ep = 8 - int(ep_square[1])
+            col = ord(ep_square[0]) - ord('a')
+            row = 8 - int(ep_square[1])
+            self.en_passant = [(row, col), TipoMov.CAPTURA]
             
-            self.en_passant = [(linha_ep, coluna_ep), TipoMov.CAPTURA]
+            if turno == Cor.BRANCO:
+                self.posicao_alvo_en_passant = (row + 1, col)
+            else:
+                self.posicao_alvo_en_passant = (row - 1, col)
             
-            direcao = 1 if linha_ep == 2 else -1
-            self.posicao_alvo_en_passant = (linha_ep + direcao, coluna_ep)
-
-            for dc in [-1, 1]:
-                c_vizinho = coluna_ep + dc
-                l_vizinho = linha_ep + direcao
-                if self.lc_valido(l_vizinho, c_vizinho):
-                    p = self.matriz[l_vizinho, c_vizinho]
-                    if (
-                        isinstance(p, Peao) and
-                        p.cor != self.matriz[self.posicao_alvo_en_passant].cor
-                    ):
-                        self.posicao_peao_en_passant.append((
-                            l_vizinho,
-                            c_vizinho
-                        ))
+            alvo_p = self.posicao_alvo_en_passant
+            for dc in (-1, 1):
+                c_viz = alvo_p[1] + dc
+                if self.lc_valido(alvo_p[0], c_viz):
+                    v = self.matriz[alvo_p[0], c_viz]
+                    if isinstance(v, Peao):
+                        if v.cor == turno:
+                            self.posicao_peao_en_passant.append((alvo_p[0], c_viz))
 
 
     def exportar_posicao_fen(self) -> str:
@@ -879,65 +1012,13 @@ class Engine:
         
         movimentos_validos = []
         for destino, tipo in candidatos:
-            if self._testar_movimento(destino, tipo, origem, self.turno):
+            if self._testar_movimento(destino, origem, self.turno):
                 movimentos_validos.append((destino, tipo))
         
         self.movimentos_possiveis = movimentos_validos
 
         # if DEBUG:
         #     print(self.movimentos_possiveis)
-
-
-    def _testar_movimento(
-        self,
-        mov_destino: tuple[int, int],
-        tipo: TipoMov,
-        origem: tuple[int, int],
-        cor: str
-    ) -> bool:
-        """
-        Simula um movimento para verificar se ele resultaria no próprio rei em xeque.
-
-        Args:
-            mov_destino (tuple[int, int]): (linha, coluna) do destino.
-            tipo (TipoMov): Tipo de movimento.
-            origem (tuple[int, int]): (linha, coluna) da origem.
-            cor (str): 'w' para branco, 'b' para preto.
-
-        Returns:
-            bool: True se o movimento resultar em xeque, False caso contrário.
-        """
-        backup_destino = self.matriz[mov_destino[0], mov_destino[1]]
-        peca_movendo = self.matriz[origem[0], origem[1]]
-        
-        backup_en_passant_peao = None
-        pos_peao_en_passant = None
-        
-        is_en_passant = (
-            isinstance(peca_movendo, Peao)
-            and
-            tipo == TipoMov.CAPTURA
-            and
-            backup_destino is None
-        )
-
-        if is_en_passant:
-            pos_peao_en_passant = self.posicao_alvo_en_passant
-            backup_en_passant_peao = self.matriz[pos_peao_en_passant]
-            self.matriz[pos_peao_en_passant] = None
-
-        self.matriz[mov_destino[0], mov_destino[1]] = peca_movendo
-        self.matriz[origem[0], origem[1]] = None
-
-        em_xeque = self.verificar_xeque(cor)
-
-        self.matriz[origem[0], origem[1]] = peca_movendo
-        self.matriz[mov_destino[0], mov_destino[1]] = backup_destino
-        
-        if is_en_passant:
-            self.matriz[pos_peao_en_passant] = backup_en_passant_peao
-
-        return not em_xeque
 
 
     def _adicionar_en_passant(self, mov: list) -> None:
