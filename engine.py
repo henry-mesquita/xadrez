@@ -485,6 +485,12 @@ class Engine:
     def _verificar_fim_de_jogo(self, cor_atual: str) -> bool:
         """
         Agrega todas as checagens de fim de partida.
+
+        Args:
+            cor_atual (str): Cor do jogador atual.
+
+        Returns:
+            bool: True se o jogo terminou.
         """
         if self._verificar_xeque_mate_ou_afogamento(cor_atual):
             return False
@@ -505,6 +511,16 @@ class Engine:
         cor: Cor,
         distancia_c: int
     ) -> bool:
+        """
+        Verifica se o jogador pode realizar um roque.
+
+        Args:
+            cor (Cor): Cor do jogador.
+            distancia_c (int): Diferença de colunas entre a torre e o rei.
+
+        Returns:
+            bool: True se o jogador pode realizar um roque, False caso contrário.
+        """
         lado = "curto" if distancia_c > 0 else "longo"
 
         if self.verificar_roque(cor, lado):

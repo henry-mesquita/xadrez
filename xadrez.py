@@ -104,6 +104,13 @@ class Xadrez:
 
 
     def processar_jogada(self, mov: Movimento, peca: Peca) -> None:
+        """
+        Processa o movimento realizado pelo jogador.
+
+        Args:
+            mov (Movimento): O movimento realizado pelo jogador.
+            peca (Peca): A peça movida.
+        """
         sucesso = self.engine.movimento_possivel(mov=mov)
 
         if sucesso:
@@ -155,7 +162,10 @@ class Xadrez:
             if self.peca_selecionada:
                 mov = Movimento(origem=self.origem_selecionada, destino=(l, c))
                 
-                if any(mov.destino == destino for destino, _ in self.engine.movimentos_possiveis):
+                if any(
+                    mov.destino == destino
+                    for destino, _ in self.engine.movimentos_possiveis
+                ):
                     return mov, self.peca_selecionada
                 
                 self.peca_selecionada = None
@@ -164,7 +174,9 @@ class Xadrez:
 
         elif event.type == pg.MOUSEMOTION:
             if self.renderer.peca_arrastada:
-                self.renderer.peca_arrastada.rect.topleft = vetor(event.pos) - self.renderer.drag_offset
+                self.renderer.peca_arrastada.rect.topleft = (
+                    vetor(event.pos) - self.renderer.drag_offset
+                )
 
         elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
             if self.renderer.peca_arrastada:

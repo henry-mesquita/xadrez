@@ -103,7 +103,6 @@ class Renderer:
         x: int = c_visual * TAM_CASA
         y: int = l_visual * TAM_CASA
 
-        # Cria o rect caso não exista
         if not hasattr(peca, 'rect') or peca.rect is None:
             peca.rect = peca.sprite.get_rect(topleft=(x, y))
         else:
@@ -250,10 +249,7 @@ class Renderer:
             self.menu_promocao_rects[tipo] = rect
 
 
-    def obter_escolha_promocao(
-        self,
-        pos_mouse: tuple[int, int]
-    ):
+    def obter_escolha_promocao(self, pos_mouse: tuple[int, int]) -> str | None:
         """
         Retorna o tipo da peça escolhida no menu de promoção.
         """
@@ -270,6 +266,7 @@ class Renderer:
         """
         if self.engine.verificar_xeque(Cor.BRANCO):
             self._desenhar_xeque_branco(surface=self.tela)
+
         if self.engine.verificar_xeque(Cor.PRETO):
             self._desenhar_xeque_preto(surface=self.tela)
 
