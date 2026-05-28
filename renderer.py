@@ -187,6 +187,9 @@ class Renderer:
             surface=self.surf_base_tabuleiro,
             dest=TAB_POS
         )
+
+        self._desenhar_destaque(surface=self.tela)
+
         self._desenhar_xeque()
         self._desenhar_movimentos_possiveis(surface=self.tela)
         self._desenhar_pecas(surface=self.tela)
@@ -196,6 +199,30 @@ class Renderer:
 
         if DEBUG:
             self._desenhar_turno(surface=self.tela)
+
+
+    def _desenhar_destaque(self, surface: Surface) -> None:
+        """
+        Desenha um destaque visual nas casas de origem e destino do último lance.
+
+        Args:
+            surface (Surface): Surface do tabuleiro.
+        """
+        if self.engine.ultimo_mov is not None:
+            mov = self.engine.ultimo_mov
+            casas_para_destacar = [mov.origem, mov.destino]
+
+            for (l, c) in casas_para_destacar:
+                l_vis, c_vis = self.transformar_coords(l, c)
+                
+                x = c_vis * TAM_CASA + TAB_POS[0]
+                y = l_vis * TAM_CASA + TAB_POS[1]
+
+                surf_destaque = pg.Surface((TAM_CASA, TAM_CASA))
+                surf_destaque.set_alpha(TRANSPARENCIA_DESTAQUE)
+                surf_destaque.fill(COR_ULTIMO_MOV)
+                
+                surface.blit(surf_destaque, (x, y))
 
 
     def desenhar_menu_promocao(self) -> None:

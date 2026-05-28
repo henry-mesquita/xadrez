@@ -121,6 +121,8 @@ class Engine:
         self.casa_promocao: tuple[int, int] | None = None
         self.aguardando_promocao = False
 
+        self.ultimo_mov: Movimento | None = None
+
 
     def movimento_possivel(self, mov: Movimento) -> bool:
         """
@@ -181,6 +183,9 @@ class Engine:
         Returns:
             bool: True se o movimento for valido, False caso contrário.
         """
+
+        self.ultimo_mov = mov
+
         p = self.matriz[mov.origem[0], mov.origem[1]]
         if p is None:
             return False

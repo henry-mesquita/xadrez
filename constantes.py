@@ -17,6 +17,9 @@ COR_FUNDO: tuple[int, int, int]         = (230, 230, 230)
 COR_XEQUE: tuple[int, int, int]         = (190, 0, 0)
 TRANSPARENCIA_XEQUE: int                = 130
 
+COR_ULTIMO_MOV: tuple[int, int, int]    = (222, 108, 242)
+TRANSPARENCIA_DESTAQUE: int             = 150
+
 TAM_CASA: int                           = 70
 RAIO_CIRCULO: int                       = int(0.05 * TAM_CASA)
 
