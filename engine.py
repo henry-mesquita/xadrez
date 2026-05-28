@@ -1,6 +1,6 @@
 from constantes import *
 import numpy as np
-from pecas.peca import Peca, Cor
+from pecas.peca import Peca, Cor, TipoPeca
 from pecas.bispo import Bispo
 from pecas.cavalo import Cavalo
 from pecas.dama import Dama
@@ -118,6 +118,9 @@ class Engine:
 
         self.posicoes_jogadas: list[str] = []
 
+        self.casa_promocao: tuple[int, int] | None = None
+        self.aguardando_promocao = False
+
 
     def movimento_possivel(self, mov: Movimento) -> bool:
         """
@@ -170,15 +173,20 @@ class Engine:
 
 
     def executar_movimento(self, mov: Movimento, interno: bool=False) -> bool:
+        """
+        Executa um movimento, atualizando o tabuleiro e os movimentos possíveis.
+        Args:
+            mov (Movimento): Objeto contendo as coordenadas de origem e destino.
+            interno (bool): True se o movimento foi executado pela engine, False caso contrário.
+        Returns:
+            bool: True se o movimento for valido, False caso contrário.
+        """
         p = self.matriz[mov.origem[0], mov.origem[1]]
-
         if p is None:
             return False
-        
-        captura = (
-            self.matriz[mov.destino[0], mov.destino[1]]
-            is not None
-        )
+
+        if not interno:
+            self.limpar_movimentos()
 
         en_passant_antigo = self.en_passant
         peoes_en_passant_antigo = self.posicao_peao_en_passant.copy()
@@ -264,31 +272,65 @@ class Engine:
 
         self.matriz[mov.destino[0], mov.destino[1]] = p
         self.matriz[mov.origem[0], mov.origem[1]] = None
-
         p.posicao = mov.destino
 
-        if not interno:
-            self.limpar_movimentos()
+        promocao_ocorrendo = False
+        if not interno and isinstance(p, Peao):
+            if (p.cor == Cor.BRANCO and mov.destino[0] == 0) or \
+            (p.cor == Cor.PRETO and mov.destino[0] == 7):
+                self.aguardando_promocao = True
+                self.casa_promocao = mov.destino
+                promocao_ocorrendo = True
 
-        if isinstance(p, Peao) or captura:
+        if promocao_ocorrendo:
+            return True 
+
+        self._finalizar_turno(
+            captura=(self.matriz[mov.destino[0],mov.destino[1]] is not None),
+            peao=isinstance(p, Peao),
+            interno=interno
+        )
+        return True
+
+
+    def _finalizar_turno(self, captura: bool, peao: bool, interno: bool) -> None:
+        """
+        Método auxiliar para concluir a lógica de fim de turno.
+
+        Args:
+            captura (bool): True se houver captura, False caso contrário.
+            peao (bool): True se houver peão, False caso contrário.
+            interno (bool): True se o movimento foi executado pela engine.
+        """
+        if peao or captura:
             self.halfmove_clock = 0
         else:
             self.halfmove_clock += 1
 
         self.mudar_turno()
-
         if self.turno == Cor.BRANCO:
             self.fullmove_number += 1
         
-
         if not interno:
-            self.posicoes_jogadas.append(
-                self.exportar_posicao_fen()
-            )
+            self.posicoes_jogadas.append(self.exportar_posicao_fen())
+            self._verificar_fim_de_jogo(cor_atual=self.turno)
 
-        self._verificar_fim_de_jogo(cor_atual=self.turno)
 
-        return True
+    def promover_peao(self, novo_tipo: TipoPeca):
+        """
+        Substitui o peão e finaliza turno.
+
+        Args:
+            novo_tipo (TipoPeca): Novo tipo de peão.
+        """
+        l, c = self.casa_promocao
+        peao = self.matriz[l, c]
+
+        self.matriz[l, c] = self.criar_peca(tipo=novo_tipo, cor=peao.cor, pos=[l, c])
+        self.casa_promocao = None
+        self.aguardando_promocao = False
+
+        self._finalizar_turno(captura=False, peao=True, interno=False)
 
 
     def _tem_movimentos_legais(self, cor: str) -> bool:

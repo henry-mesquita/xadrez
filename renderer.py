@@ -42,6 +42,8 @@ class Renderer:
         self.orientacao_tabuleiro: Cor = Cor.BRANCO
         self.inicializar_sprites_tabuleiro()
 
+        self.menu_promocao_rects = {}
+
 
     def _inicializar_pg(self) -> None:
         """
@@ -189,8 +191,77 @@ class Renderer:
         self._desenhar_xeque()
         self._desenhar_movimentos_possiveis(surface=self.tela)
         self._desenhar_pecas(surface=self.tela)
+
+        if self.engine.aguardando_promocao:
+            self.desenhar_menu_promocao()
+
         if DEBUG:
             self._desenhar_turno(surface=self.tela)
+
+
+    def desenhar_menu_promocao(self) -> None:
+        """
+        Desenha o menu de escolha de promoção.
+        """
+        largura = 400
+        altura = 100
+
+        x = TAMANHO_TELA[0] // 2 - largura // 2
+        y = TAMANHO_TELA[1] // 2 - altura // 2
+
+        fundo = pg.Rect(x, y, largura, altura)
+
+        pg.draw.rect(
+            surface=self.tela,
+            color=(40, 40, 40),
+            rect=fundo,
+            border_radius=10
+        )
+
+        pecas = ['q', 'r', 'b', 'n']
+
+        self.menu_promocao_rects.clear()
+
+        for i, tipo in enumerate(pecas):
+            rect = pg.Rect(
+                x + 20 + i * 90,
+                y + 20,
+                70,
+                70
+            )
+
+            pg.draw.rect(
+                surface=self.tela,
+                color=(200, 200, 200),
+                rect=rect,
+                border_radius=8
+            )
+
+            cor = self.engine.turno
+
+            chave = f"{cor}{tipo}"
+
+            sprite = self.cache_sprites[chave]
+
+            sprite_rect = sprite.get_rect(center=rect.center)
+
+            self.tela.blit(sprite, sprite_rect)
+
+            self.menu_promocao_rects[tipo] = rect
+
+
+    def obter_escolha_promocao(
+        self,
+        pos_mouse: tuple[int, int]
+    ):
+        """
+        Retorna o tipo da peça escolhida no menu de promoção.
+        """
+        for tipo, rect in self.menu_promocao_rects.items():
+            if rect.collidepoint(pos_mouse):
+                return tipo
+
+        return None
 
 
     def _desenhar_xeque(self) -> None:
