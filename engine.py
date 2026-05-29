@@ -162,35 +162,44 @@ class Engine:
 
     def _verificar_insuficiencia_material(self) -> bool:
         """
-        Verifica se restam peças suficientes para aplicar um xeque-mate.
-        Regras básicas da FIDE:
-        1. Rei vs Rei
-        2. Rei e Bispo vs Rei
-        3. Rei e Cavalo vs Rei
-        4. Rei e Bispo vs Rei e Bispo (mesma cor de casa)
+        Verifica se a posição é um empate por insuficiência de material (Dead Position).
+        Regras FIDE (Artigo 5.2.2): O jogo está empatado quando surge uma posição 
+        onde nenhum xeque-mate pode ocorrer por qualquer série de lances legais.
         """
-        pecas_vivas: list[Peca] = []
-        for li in range(8):
-            for co in range(8):
-                p = self.matriz[li, co]
-                if p is not None and not isinstance(p, Rei):
-                    pecas_vivas.append(p)
+        pecas_brancas = []
+        pecas_pretas = []
+        
+        for r in range(8):
+            for c in range(8):
+                peca = self.matriz[r, c]
+                if peca is None or isinstance(peca, Rei):
+                    continue
+                
+                if isinstance(peca, (Peao, Torre, Dama)):
+                    return False
+                
+                info = (type(peca), (r + c) % 2)
+                
+                if peca.cor == Cor.BRANCO:
+                    pecas_brancas.append(info)
+                else:
+                    pecas_pretas.append(info)
 
-        if len(pecas_vivas) == 0:
+        total_menores = len(pecas_brancas) + len(pecas_pretas)
+
+        # Rei vs Rei
+        if total_menores == 0:
             return True
 
-        if len(pecas_vivas) == 1:
-            p = pecas_vivas[0]
-            if isinstance(p, (Bispo, Cavalo)):
-                return True
+        # Rei e Peça Menor
+        if total_menores == 1:
+            return True
 
-        if len(pecas_vivas) == 2:
-            p1, p2 = pecas_vivas[0], pecas_vivas[1]
-            if isinstance(p1, Bispo) and isinstance(p2, Bispo):
-                pos1 = self.achar_lc_peca(p1)
-                pos2 = self.achar_lc_peca(p2)
-                if (pos1[0] + pos1[1]) % 2 == (pos2[0] + pos2[1]) % 2:
-                    return True
+        # Rei e Bispo vs Rei e Bispo (Bispos na mesma cor de casa)
+        if all(tipo == Bispo for tipo, _ in pecas_brancas + pecas_pretas):
+            cor_da_casa_referencia = (pecas_brancas + pecas_pretas)[0][1]
+            if all(cor_casa == cor_da_casa_referencia for _, cor_casa in pecas_brancas + pecas_pretas):
+                return True
 
         return False
 

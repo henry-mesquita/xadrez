@@ -82,9 +82,6 @@ class Renderer:
         Args:
             peca (Peca): Instância da peça.
         """
-        chave = f"{peca.cor}{peca.tipo.value}"
-        peca.sprite = self.cache_sprites[chave]
-        
         self.sincronizar_peca_ao_tabuleiro(peca=peca)
 
 
@@ -95,6 +92,12 @@ class Renderer:
         Args:
             peca (Peca): Instância da peça.
         """
+
+        # lazy assignment
+        if not hasattr(peca, 'sprite') or peca.sprite is None:
+            chave = f"{peca.cor}{peca.tipo.value}"
+            peca.sprite = self.cache_sprites[chave]
+
         l_visual, c_visual = self.transformar_coords(
             l=peca.posicao[0],
             c=peca.posicao[1]
@@ -107,12 +110,6 @@ class Renderer:
             peca.rect = peca.sprite.get_rect(topleft=(x, y))
         else:
             peca.rect.topleft = (x, y)
-
-    def sincronizar_todas_pecas(self) -> None:
-        for linha in self.engine.matriz:
-            for peca in linha:
-                if peca is not None:
-                    self.sincronizar_peca_ao_tabuleiro(peca=peca)
 
 
     def _carregar_cache_sprites(self) -> None:
