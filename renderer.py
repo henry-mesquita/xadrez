@@ -82,12 +82,15 @@ class Renderer:
         Args:
             peca (Peca): Instância da peça.
         """
+        chave = f"{peca.cor}{peca.tipo.value}"
+        peca.sprite = self.cache_sprites[chave]
+        
         self.sincronizar_peca_ao_tabuleiro(peca=peca)
 
 
     def sincronizar_peca_ao_tabuleiro(self, peca: Peca) -> None:
         """
-        Calcula a posição visual do Rect baseada na lógica e na orientação.
+        Garante que a peça tenha sprite e calcula a posição visual do Rect.
 
         Args:
             peca (Peca): Instância da peça.
@@ -97,7 +100,7 @@ class Renderer:
         if not hasattr(peca, 'sprite') or peca.sprite is None:
             chave = f"{peca.cor}{peca.tipo.value}"
             peca.sprite = self.cache_sprites[chave]
-
+        
         l_visual, c_visual = self.transformar_coords(
             l=peca.posicao[0],
             c=peca.posicao[1]
@@ -110,6 +113,16 @@ class Renderer:
             peca.rect = peca.sprite.get_rect(topleft=(x, y))
         else:
             peca.rect.topleft = (x, y)
+
+
+    def sincronizar_todas_pecas(self) -> None:
+        """
+        Percorre e sincroniza todas as peças ao tabuleiro.
+        """
+        for linha in self.engine.matriz:
+            for peca in linha:
+                if peca is not None:
+                    self.sincronizar_peca_ao_tabuleiro(peca=peca)
 
 
     def _carregar_cache_sprites(self) -> None:
