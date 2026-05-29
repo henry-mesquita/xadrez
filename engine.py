@@ -257,11 +257,9 @@ class Engine:
         self.posicao_peao_en_passant = []
         self.posicao_alvo_en_passant = None
 
-        # Atualizar direitos de roque (Movimento de Torre ou Captura em Cantos)
         if isinstance(p, Torre):
             self._remover_direito_roque(p.cor, mov.origem[1])
         
-        # REGRA CRUCIAL: Captura em cantos remove direitos independente do tipo da peça
         if mov.destino == (7, 7): self.roque_curto_branco = False
         elif mov.destino == (7, 0): self.roque_longo_branco = False
         elif mov.destino == (0, 7): self.roque_curto_preto = False
@@ -342,7 +340,6 @@ class Engine:
             self.fullmove_number -= 1
         self.mudar_turno()
 
-        # Restaurar flags de estado
         self.roque_curto_branco = estado.roque_curto_branco
         self.roque_longo_branco = estado.roque_longo_branco
         self.roque_curto_preto = estado.roque_curto_preto
@@ -354,10 +351,8 @@ class Engine:
         self.ultimo_mov = estado.ultimo_mov
         self.aguardando_promocao = False
 
-        # Peça que se moveu
         p = self.matriz[mov.destino[0], mov.destino[1]]
 
-        # Se foi promoção, p é a Dama. Precisamos transformá-la em Peão de volta.
         if estado.foi_promocao:
             p = self.criar_peca(tipo='p', cor=p.cor, pos=[mov.origem[0], mov.origem[1]])
 
@@ -365,14 +360,12 @@ class Engine:
         p.posicao = (mov.origem[0], mov.origem[1])
         self.matriz[mov.destino[0], mov.destino[1]] = None
 
-        # Restaurar peça capturada (se houver)
         if estado.peca_capturada is not None:
             pos_cap = estado.pos_peca_capturada
             self.matriz[pos_cap[0], pos_cap[1]] = estado.peca_capturada
             # Restaurar a coordenada interna da peça capturada!
             estado.peca_capturada.posicao = (pos_cap[0], pos_cap[1])
 
-        # Se foi Roque, desfazer movimento da Torre
         if isinstance(p, Rei):
             distancia_c = mov.destino[1] - mov.origem[1]
             if abs(distancia_c) == 2:

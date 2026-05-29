@@ -46,13 +46,24 @@ class Peca:
 
 
     def __str__(self) -> str:
-        """Retorna uma representação de string da peça."""
-        return f'Tipo: {self.__class__.__name__} | Cor: {self.cor} | Posição: {self.posicao}'
+        """
+        Retorna uma representação de string da peça.
+        """
+        tipo = self.__class__.__name__
+        cor = self.cor
+        pos = self.posicao
+        return f"Tipo: {tipo} | Cor: {cor} | Posição: {pos})"
+
     
 
     def __repr__(self) -> str:
-        """Retorna uma representação de depuração da peça."""
-        return f"Tipo: {self.__class__.__name__} | Cor: {self.cor} | Posição: {self.posicao})"
+        """
+        Retorna uma representação de depuração da peça.
+        """
+        tipo = self.__class__.__name__
+        cor = self.cor
+        pos = self.posicao
+        return f"Tipo: {tipo} | Cor: {cor} | Posição: {pos})"
 
 
     @staticmethod
