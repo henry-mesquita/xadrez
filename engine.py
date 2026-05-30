@@ -367,7 +367,7 @@ class Engine:
 
         if estado.foi_promocao:
             p = self.criar_peca(
-                tipo=TipoPeca.PEAO,
+                tipo=TipoPeca.PEAO.value,
                 cor=p.cor,
                 pos=[mov.origem[0],
                      mov.origem[1]]
