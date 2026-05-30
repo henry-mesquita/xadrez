@@ -35,3 +35,5 @@ TAB_POS: tuple[int, int]                = (0, 0)
 FEN_INICIAL: str = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 ESTILO_PECAS = "mpchess"
+
+DESFAZER_MOVIMENTO: bool                = True
