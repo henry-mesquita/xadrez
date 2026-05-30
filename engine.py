@@ -341,6 +341,9 @@ class Engine:
         """
         if len(self.historico) == 0:
             return
+        
+        if self.posicoes_jogadas:
+            self.posicoes_jogadas.pop()
 
         estado = self.historico.pop()
         mov = estado.movimento
@@ -363,7 +366,12 @@ class Engine:
         p = self.matriz[mov.destino[0], mov.destino[1]]
 
         if estado.foi_promocao:
-            p = self.criar_peca(tipo='p', cor=p.cor, pos=[mov.origem[0], mov.origem[1]])
+            p = self.criar_peca(
+                tipo=TipoPeca.PEAO,
+                cor=p.cor,
+                pos=[mov.origem[0],
+                     mov.origem[1]]
+            )
 
         self.matriz[mov.origem[0], mov.origem[1]] = p
         p.posicao = (mov.origem[0], mov.origem[1])
