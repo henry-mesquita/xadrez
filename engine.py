@@ -17,6 +17,7 @@ class EstadoHistorico:
     Guarda o estado necessário para reverter um lance.
     """
     movimento: Movimento
+    peca_movida: Peca
     peca_capturada: Peca | None
     pos_peca_capturada: tuple[int, int] | None
     roque_curto_branco: bool
@@ -242,6 +243,7 @@ class Engine:
 
         self.historico.append(EstadoHistorico(
             movimento=mov,
+            peca_movida=p,
             peca_capturada=peca_capturada,
             pos_peca_capturada=pos_captura,
             roque_curto_branco=self.roque_curto_branco,
@@ -363,41 +365,32 @@ class Engine:
         self.ultimo_mov = estado.ultimo_mov
         self.aguardando_promocao = False
 
-        p = self.matriz[mov.destino[0], mov.destino[1]]
+        p = estado.peca_movida
 
-        if estado.foi_promocao:
-            p = self.criar_peca(
-                tipo=TipoPeca.PEAO.value,
-                cor=p.cor,
-                pos=[mov.origem[0],
-                     mov.origem[1]]
-            )
-
+        self.matriz[mov.destino[0], mov.destino[1]] = None
         self.matriz[mov.origem[0], mov.origem[1]] = p
         p.posicao = (mov.origem[0], mov.origem[1])
-        self.matriz[mov.destino[0], mov.destino[1]] = None
 
         if estado.peca_capturada is not None:
             pos_cap = estado.pos_peca_capturada
             self.matriz[pos_cap[0], pos_cap[1]] = estado.peca_capturada
-            # Restaurar a coordenada interna da peça capturada!
             estado.peca_capturada.posicao = (pos_cap[0], pos_cap[1])
 
         if isinstance(p, Rei):
             distancia_c = mov.destino[1] - mov.origem[1]
             if abs(distancia_c) == 2:
                 l = mov.origem[0]
-                if mov.destino[1] == 6: # Curto
+                if mov.destino[1] == 6:
                     torre = self.matriz[l, 5]
                     self.matriz[l, 7] = torre
                     self.matriz[l, 5] = None
-                    if torre is not None:
+                    if torre:
                         torre.posicao = (l, 7)
-                else: # Longo
+                else:
                     torre = self.matriz[l, 3]
                     self.matriz[l, 0] = torre
                     self.matriz[l, 3] = None
-                    if torre is not None:
+                    if torre:
                         torre.posicao = (l, 0)
 
 

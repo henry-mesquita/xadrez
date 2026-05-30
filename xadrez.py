@@ -148,9 +148,12 @@ class Xadrez:
             peca_clicada = self.engine.matriz[l, c]
 
             if peca_clicada and peca_clicada.cor == self.engine.turno:
+                self.renderer.sincronizar_peca_ao_tabuleiro(peca_clicada)
+
                 if self.peca_selecionada == peca_clicada:
                     self.peca_selecionada = None
                     self.origem_selecionada = None
+                    self.renderer.peca_arrastada = None
                     self.engine.limpar_movimentos()
                     return None, None
 
@@ -174,6 +177,7 @@ class Xadrez:
                 
                 self.peca_selecionada = None
                 self.origem_selecionada = None
+                self.renderer.peca_arrastada = None
                 self.engine.limpar_movimentos()
 
         elif event.type == pg.MOUSEMOTION:

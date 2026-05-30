@@ -95,11 +95,11 @@ class Renderer:
         Args:
             peca (Peca): Instância da peça.
         """
-
-        # lazy assignment
         if not hasattr(peca, 'sprite') or peca.sprite is None:
-            chave = f"{peca.cor}{peca.tipo.value}"
-            peca.sprite = self.cache_sprites[chave]
+            cor_val = peca.cor.value if hasattr(peca.cor, 'value') else peca.cor
+            tipo_val = peca.tipo.value if hasattr(peca.tipo, 'value') else peca.tipo
+            chave = f"{cor_val}{tipo_val}"
+            peca.sprite = self.cache_sprites.get(chave)
         
         l_visual, c_visual = self.transformar_coords(
             l=peca.posicao[0],
@@ -239,49 +239,71 @@ class Renderer:
         """
         Desenha o menu de escolha de promoção.
         """
-        largura = 400
-        altura = 100
+        overlay = pg.Surface(TAMANHO_TELA)
+        overlay.set_alpha(180)
+        overlay.fill(PRETO)
+        self.tela.blit(overlay, (0, 0))
 
-        x = TAMANHO_TELA[0] // 2 - largura // 2
-        y = TAMANHO_TELA[1] // 2 - altura // 2
+        padding = TAM_CASA // 4
+        tamanho_slot = int(TAM_CASA * 1.2)
+        largura_menu = (tamanho_slot * 4) + (padding * 5)
+        altura_menu = tamanho_slot + (padding * 2)
 
-        fundo = pg.Rect(x, y, largura, altura)
+        x = (TAMANHO_TELA[0] - largura_menu) // 2
+        y = (TAMANHO_TELA[1] - altura_menu) // 2
+
+        fundo = pg.Rect(x, y, largura_menu, altura_menu)
 
         pg.draw.rect(
             surface=self.tela,
             color=(40, 40, 40),
             rect=fundo,
-            border_radius=10
+            border_radius=15
+        )
+
+        pg.draw.rect(
+            surface=self.tela,
+            color=COR_TEXTO,
+            rect=fundo,
+            width=3,
+            border_radius=15
         )
 
         pecas = ['q', 'r', 'b', 'n']
-
         self.menu_promocao_rects.clear()
 
+        cor_val = self.engine.turno
+        if hasattr(cor_val, 'value'):
+            cor_val = cor_val.value
+
         for i, tipo in enumerate(pecas):
-            rect = pg.Rect(
-                x + 20 + i * 90,
-                y + 20,
-                70,
-                70
-            )
+            slot_x = x + padding + i * (tamanho_slot + padding)
+            slot_y = y + padding
+            
+            rect = pg.Rect(slot_x, slot_y, tamanho_slot, tamanho_slot)
+            
+            mouse_pos = pg.mouse.get_pos()
+            cor_slot = (60, 60, 60)
+            if rect.collidepoint(mouse_pos):
+                cor_slot = (90, 90, 90)
 
             pg.draw.rect(
                 surface=self.tela,
-                color=(200, 200, 200),
+                color=cor_slot,
                 rect=rect,
-                border_radius=8
+                border_radius=10
             )
 
-            cor = self.engine.turno
+            chave = f"{cor_val}{tipo}"
+            sprite = self.cache_sprites.get(chave)
 
-            chave = f"{cor}{tipo}"
-
-            sprite = self.cache_sprites[chave]
-
-            sprite_rect = sprite.get_rect(center=rect.center)
-
-            self.tela.blit(sprite, sprite_rect)
+            if sprite:
+                sprite_render = pg.transform.smoothscale(
+                    surface=sprite,
+                    size=(tamanho_slot - 10, tamanho_slot - 10)
+                )
+                sprite_rect = sprite_render.get_rect(center=rect.center)
+                self.tela.blit(sprite_render, sprite_rect)
 
             self.menu_promocao_rects[tipo] = rect
 
@@ -368,22 +390,22 @@ class Renderer:
         Args:
             surface (Surface): Superficie a ser desenhada.
         """
-        for linha in self.engine.matriz:
-            for peca in linha:
-                if (
-                    peca is not None and
-                    peca != self.peca_arrastada and
-                    hasattr(peca, 'rect')
-                ):
-                    self.tela.blit(
-                        source=peca.sprite,
-                        dest=peca.rect.move(TAB_POS)
-                    )
+        for l in range(8):
+            for c in range(8):
+                peca = self.engine.matriz[l, c]
+                if peca is None or peca == self.peca_arrastada:
+                    continue
 
-        if (
-            self.peca_arrastada and
-            hasattr(self.peca_arrastada, 'rect')
-        ):
+                l_vis, c_vis = self.transformar_coords(l, c)
+                x = c_vis * TAM_CASA + TAB_POS[0]
+                y = l_vis * TAM_CASA + TAB_POS[1]
+
+                if not hasattr(peca, 'sprite') or peca.sprite is None:
+                    self.vincular_sprite_a_peca(peca)
+
+                surface.blit(peca.sprite, (x, y))
+
+        if self.peca_arrastada and hasattr(self.peca_arrastada, 'rect'):
             surface.blit(
                 source=self.peca_arrastada.sprite,
                 dest=self.peca_arrastada.rect.move(TAB_POS)
