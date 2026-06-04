@@ -69,7 +69,7 @@ class Renderer:
         """
         Itera pela matriz e vincula as peças ao sprite do cache.
         """
-        for linha in self.engine.matriz:
+        for linha in self.engine.board.matriz:
             for peca in linha:
                 if peca is not None:
                     self.vincular_sprite_a_peca(peca=peca)
@@ -119,7 +119,7 @@ class Renderer:
         """
         Percorre e sincroniza todas as peças ao tabuleiro.
         """
-        for linha in self.engine.matriz:
+        for linha in self.engine.board.matriz:
             for peca in linha:
                 if peca is not None:
                     self.sincronizar_peca_ao_tabuleiro(peca=peca)
@@ -152,7 +152,7 @@ class Renderer:
             self.orientacao_tabuleiro = Cor.BRANCO
 
         # Força a sincronização de todas as peças
-        for linha in self.engine.matriz:
+        for linha in self.engine.board.matriz:
             for peca in linha:
                 if peca:
                     self.sincronizar_peca_ao_tabuleiro(peca)
@@ -392,7 +392,7 @@ class Renderer:
         """
         for l in range(8):
             for c in range(8):
-                peca = self.engine.matriz[l, c]
+                peca = self.engine.board.matriz[l, c]
                 if peca is None or peca == self.peca_arrastada:
                     continue
 
@@ -537,7 +537,7 @@ class Renderer:
         for l in indices:
             linha_str = f"{l} |"
             for c in indices:
-                peca = self.engine.matriz[l, c]
+                peca = self.engine.board.matriz[l, c]
 
                 if peca is None:
                     if (l + c) % 2 == 0:
