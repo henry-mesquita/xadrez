@@ -206,10 +206,10 @@ class Engine:
 
 
     def executar_movimento(
-            self,
-            mov: Movimento,
-            interno: bool = False,
-            promocao_alvo: TipoPeca | None = None
+        self,
+        mov: Movimento,
+        interno: bool = False,
+        promocao_alvo: TipoPeca | None = None
     ) -> bool:
         """
         Executa um movimento.
@@ -865,49 +865,40 @@ class Engine:
         for linha in self.matriz:
             rank = ""
             vazias = 0
-
             for peca in linha:
                 if peca is None:
                     vazias += 1
                     continue
-
                 if vazias > 0:
                     rank += str(vazias)
                     vazias = 0
 
                 simbolo = peca.tipo.value
-
                 if peca.cor == Cor.BRANCO:
                     simbolo = simbolo.upper()
 
                 rank += simbolo
-
             if vazias > 0:
                 rank += str(vazias)
 
             ranks.append(rank)
 
         tabuleiro_str = "/".join(ranks)
-
         turno = self.turno
 
         roques = ""
 
         if self.roque_curto_branco:
             roques += "K"
-
         if self.roque_longo_branco:
             roques += "Q"
-
         if self.roque_curto_preto:
             roques += "k"
-
         if self.roque_longo_preto:
             roques += "q"
-
         if roques == "":
             roques = "-"
-
+        
         ep_square = "-"
 
         if self.en_passant is not None:
@@ -1169,9 +1160,9 @@ class Engine:
 
 
     def _caminho_livre(
-            self,
-            origem: tuple[int, int],
-            destino: tuple[int, int]
+        self,
+        origem: tuple[int, int],
+        destino: tuple[int, int]
     ) -> bool:
         """
         Verifica se há obstáculos entre duas casas para peças deslizantes.
