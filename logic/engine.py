@@ -9,6 +9,9 @@ from pecas.rei import Rei
 from pecas.torre import Torre
 from .move import *
 from .board import Board
+from .judge import Judge
+from .generator import Generator
+from .fen_parser import *
 
 
 class Engine:
@@ -70,7 +73,10 @@ class Engine:
         """
         Inicializa a engine com o tabuleiro vazio e carrega a posição inicial.
         """
-        self.board = Board()
+        self.board: Board           = Board()
+        self.generator: Generator   = Generator(self.board)
+        self.judge: Judge           = Judge(self.generator)
+
         self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
         self.pseudo_movimentos:     list[tuple[tuple[int, int], TipoMov]]   = []
 
