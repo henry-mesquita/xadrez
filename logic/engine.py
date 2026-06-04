@@ -8,10 +8,10 @@ from pecas.peao import Peao
 from pecas.rei import Rei
 from pecas.torre import Torre
 from .move import *
-from .board import Board
 from .judge import Judge
 from .generator import Generator
 from .fen_parser import *
+from .state import GameState
 
 
 class Engine:
@@ -73,8 +73,8 @@ class Engine:
         """
         Inicializa a engine com o tabuleiro vazio e carrega a posição inicial.
         """
-        self.board: Board           = Board()
-        self.generator: Generator   = Generator(self.board)
+        self.state: GameState       = GameState()
+        self.generator: Generator   = Generator(self.state.board)
         self.judge: Judge           = Judge(self.generator)
 
         self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
@@ -134,7 +134,7 @@ class Engine:
         
         for r in range(8):
             for c in range(8):
-                peca = self.board.matriz[r, c]
+                peca = self.state.board.matriz[r, c]
                 if peca is None or isinstance(peca, Rei):
                     continue
                 
@@ -184,11 +184,11 @@ class Engine:
         Returns:
             bool: True se o movimento foi executado, False caso contrário.
         """
-        p = self.board.matriz[mov.origem[0], mov.origem[1]]
+        p = self.state.board.matriz[mov.origem[0], mov.origem[1]]
         if p is None:
             return False
         
-        peca_destino = self.board.matriz[mov.destino[0], mov.destino[1]]
+        peca_destino = self.state.board.matriz[mov.destino[0], mov.destino[1]]
         peca_capturada = peca_destino
         pos_captura = mov.destino
 
@@ -196,7 +196,7 @@ class Engine:
             if self.en_passant is not None:
                 if mov.destino == self.en_passant[0]:
                     pos_captura = self.posicao_alvo_en_passant
-                    peca_capturada = self.board.matriz[pos_captura[0], pos_captura[1]]
+                    peca_capturada = self.state.board.matriz[pos_captura[0], pos_captura[1]]
 
         foi_promocao = False
         if isinstance(p, Peao):
@@ -221,7 +221,7 @@ class Engine:
         ))
 
         if peca_capturada is not None:
-            self.board.matriz[pos_captura[0], pos_captura[1]] = None
+            self.state.board.matriz[pos_captura[0], pos_captura[1]] = None
 
         if not interno:
             self.limpar_movimentos()
@@ -264,13 +264,13 @@ class Engine:
                 for dc in (-1, 1):
                     c_viz = coluna + dc
                     if self.lc_valido(linha, c_viz):
-                        v = self.board.matriz[linha, c_viz]
+                        v = self.state.board.matriz[linha, c_viz]
                         if isinstance(v, Peao):
                             if v.cor != p.cor:
                                 self.posicao_peao_en_passant.append((linha, c_viz))
 
-        self.board.matriz[mov.destino[0], mov.destino[1]] = p
-        self.board.matriz[mov.origem[0], mov.origem[1]] = None
+        self.state.board.matriz[mov.destino[0], mov.destino[1]] = p
+        self.state.board.matriz[mov.origem[0], mov.origem[1]] = None
         p.posicao = (mov.destino[0], mov.destino[1])
         self.ultimo_mov = mov
 
@@ -281,7 +281,7 @@ class Engine:
                     tipo_para_promover = TipoPeca.DAMA
             
             if tipo_para_promover is not None:
-                self.board.matriz[mov.destino[0], mov.destino[1]] = self.criar_peca(
+                self.state.board.matriz[mov.destino[0], mov.destino[1]] = self.criar_peca(
                     tipo=tipo_para_promover.value,
                     cor=p.cor,
                     pos=[mov.destino[0], mov.destino[1]]
@@ -329,13 +329,13 @@ class Engine:
 
         p = estado.peca_movida
 
-        self.board.matriz[mov.destino[0], mov.destino[1]] = None
-        self.board.matriz[mov.origem[0], mov.origem[1]] = p
+        self.state.board.matriz[mov.destino[0], mov.destino[1]] = None
+        self.state.board.matriz[mov.origem[0], mov.origem[1]] = p
         p.posicao = (mov.origem[0], mov.origem[1])
 
         if estado.peca_capturada is not None:
             pos_cap = estado.pos_peca_capturada
-            self.board.matriz[pos_cap[0], pos_cap[1]] = estado.peca_capturada
+            self.state.board.matriz[pos_cap[0], pos_cap[1]] = estado.peca_capturada
             estado.peca_capturada.posicao = (pos_cap[0], pos_cap[1])
 
         if isinstance(p, Rei):
@@ -343,15 +343,15 @@ class Engine:
             if abs(distancia_c) == 2:
                 l = mov.origem[0]
                 if mov.destino[1] == 6:
-                    torre = self.board.matriz[l, 5]
-                    self.board.matriz[l, 7] = torre
-                    self.board.matriz[l, 5] = None
+                    torre = self.state.board.matriz[l, 5]
+                    self.state.board.matriz[l, 7] = torre
+                    self.state.board.matriz[l, 5] = None
                     if torre:
                         torre.posicao = (l, 7)
                 else:
-                    torre = self.board.matriz[l, 3]
-                    self.board.matriz[l, 0] = torre
-                    self.board.matriz[l, 3] = None
+                    torre = self.state.board.matriz[l, 3]
+                    self.state.board.matriz[l, 0] = torre
+                    self.state.board.matriz[l, 3] = None
                     if torre:
                         torre.posicao = (l, 0)
 
@@ -407,14 +407,14 @@ class Engine:
         """
         l = 7 if cor == Cor.BRANCO else 0
         if distancia_c > 0: # Curto
-            torre = self.board.matriz[l, 7]
-            self.board.matriz[l, 5] = torre
-            self.board.matriz[l, 7] = None
+            torre = self.state.board.matriz[l, 7]
+            self.state.board.matriz[l, 5] = torre
+            self.state.board.matriz[l, 7] = None
             if torre: torre.posicao = (l, 5)
         else: # Longo
-            torre = self.board.matriz[l, 0]
-            self.board.matriz[l, 3] = torre
-            self.board.matriz[l, 0] = None
+            torre = self.state.board.matriz[l, 0]
+            self.state.board.matriz[l, 3] = torre
+            self.state.board.matriz[l, 0] = None
             if torre: torre.posicao = (l, 3)
 
 
@@ -449,9 +449,9 @@ class Engine:
             novo_tipo (TipoPeca): Novo tipo de peão.
         """
         l, c = self.casa_promocao
-        peao = self.board.matriz[l, c]
+        peao = self.state.board.matriz[l, c]
 
-        self.board.matriz[l, c] = self.criar_peca(tipo=novo_tipo, cor=peao.cor, pos=[l, c])
+        self.state.board.matriz[l, c] = self.criar_peca(tipo=novo_tipo, cor=peao.cor, pos=[l, c])
         self.casa_promocao = None
         self.aguardando_promocao = False
 
@@ -470,7 +470,7 @@ class Engine:
         """
         for li in range(8):
             for co in range(8):
-                p = self.board.matriz[li, co]
+                p = self.state.board.matriz[li, co]
                 if p is not None and p.cor == cor:
                     pseudo = p.gerar_pseudo_movimentos(lc=(li, co))
                     candidatos = self._classificar_movimentos(p, (li, co), pseudo)
@@ -498,7 +498,7 @@ class Engine:
         pretas = 0
         for li in range(8):
             for co in range(8):
-                p = self.board.matriz[li, co]
+                p = self.state.board.matriz[li, co]
                 if p is not None:
                     if p.cor == Cor.BRANCO:
                         brancas += p.pontuacao
@@ -767,7 +767,7 @@ class Engine:
         else:
             self.fullmove_number = 1
 
-        self.board.matriz.fill(None)
+        self.state.board.matriz.fill(None)
 
         ranks = tabuleiro_str.split('/')
         for i, rank in enumerate(ranks):
@@ -777,7 +777,7 @@ class Engine:
                     j += int(ch)
                 else:
                     cor_peca = Cor.BRANCO if ch.isupper() else Cor.PRETO
-                    self.board.matriz[i, j] = self.criar_peca(
+                    self.state.board.matriz[i, j] = self.criar_peca(
                         tipo=ch.lower(),
                         cor=cor_peca,
                         pos=[i, j]
@@ -808,7 +808,7 @@ class Engine:
             for dc in (-1, 1):
                 c_viz = alvo_p[1] + dc
                 if self.lc_valido(alvo_p[0], c_viz):
-                    v = self.board.matriz[alvo_p[0], c_viz]
+                    v = self.state.board.matriz[alvo_p[0], c_viz]
                     if isinstance(v, Peao):
                         if v.cor == turno:
                             self.posicao_peao_en_passant.append((alvo_p[0], c_viz))
@@ -824,7 +824,7 @@ class Engine:
 
         ranks = []
 
-        for linha in self.board.matriz:
+        for linha in self.state.board.matriz:
             rank = ""
             vazias = 0
             for peca in linha:
@@ -914,7 +914,7 @@ class Engine:
         """
         for li in range(8):
             for co in range(8):
-                if self.board.matriz[li, co] == peca:
+                if self.state.board.matriz[li, co] == peca:
                     return (li, co)
         return None
 
@@ -931,7 +931,7 @@ class Engine:
         """
         for li in range(8):
             for co in range(8):
-                p = self.board.matriz[li, co]
+                p = self.state.board.matriz[li, co]
                 if isinstance(p, Rei):
                     if p.cor == cor:
                         return (li, co)
@@ -1080,7 +1080,7 @@ class Engine:
         Returns:
             TipoMov | None: Tipo do movimento se válido, None caso contrário.
         """
-        destino = self.board.matriz[destino_lc[0], destino_lc[1]]
+        destino = self.state.board.matriz[destino_lc[0], destino_lc[1]]
 
         if isinstance(peca, Peao):
             delta = (destino_lc[0] - origem[0], destino_lc[1] - origem[1])
@@ -1098,7 +1098,7 @@ class Engine:
 
             if delta == double_forward:
                 meio = (origem[0] + forward[0], origem[1])
-                if destino is None and self.board.matriz[meio[0], meio[1]] is None:
+                if destino is None and self.state.board.matriz[meio[0], meio[1]] is None:
                     return TipoMov.NORMAL
                 return None
 
@@ -1145,7 +1145,7 @@ class Engine:
 
         atual = (origem[0] + passo_l, origem[1] + passo_c)
         while atual != destino:
-            if self.board.matriz[atual[0], atual[1]] is not None:
+            if self.state.board.matriz[atual[0], atual[1]] is not None:
                 return False
             atual = (atual[0] + passo_l, atual[1] + passo_c)
         return True
@@ -1197,7 +1197,7 @@ class Engine:
                 c += direcao[1]
                 if not self.lc_valido(linha=l, coluna=c):
                     break
-                destino = self.board.matriz[l, c]
+                destino = self.state.board.matriz[l, c]
                 if destino is None:
                     continue
                 if destino.cor != cor and isinstance(destino, (Torre, Dama)):
@@ -1224,7 +1224,7 @@ class Engine:
                 l += direcao[0]
                 c += direcao[1]
                 if not self.lc_valido(linha=l, coluna=c): break
-                destino = self.board.matriz[l, c]
+                destino = self.state.board.matriz[l, c]
                 if destino is None: continue
                 if destino.cor != cor and isinstance(destino, (Bispo, Dama)):
                     return True
@@ -1256,7 +1256,7 @@ class Engine:
         for offset in offsets_cavalo:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
             if self.lc_valido(linha=l, coluna=c):
-                destino = self.board.matriz[l, c]
+                destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Cavalo) and destino.cor != cor:
                     return True
         return False
@@ -1286,7 +1286,7 @@ class Engine:
         for offset in offsets_rei:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
             if self.lc_valido(linha=l, coluna=c):
-                destino = self.board.matriz[l, c]
+                destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Rei) and destino.cor != cor:
                     return True
         return False
@@ -1308,7 +1308,7 @@ class Engine:
         for offset in offsets_peao:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
             if self.lc_valido(linha=l, coluna=c):
-                destino = self.board.matriz[l, c]
+                destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Peao) and destino.cor != cor:
                     return True
         return False

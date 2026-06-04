@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from pecas.peca import Peca
 
+
 @dataclass
 class EstadoHistorico:
     """
