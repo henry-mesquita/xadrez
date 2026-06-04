@@ -80,24 +80,7 @@ class Engine:
         self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
         self.pseudo_movimentos:     list[tuple[tuple[int, int], TipoMov]]   = []
 
-        self.roque_curto_branco:    bool = True
-        self.roque_longo_branco:    bool = True
-        self.roque_curto_preto:     bool = True
-        self.roque_longo_preto:     bool = True
-
-        self.halfmove_clock:        int = 0
-        self.fullmove_number:       int = 1
-
         self.carregar_posicao_fen(fen=FEN_INICIAL)
-        self.turno = Cor.BRANCO
-
-        self.en_passant: None | list[tuple[int, int], TipoMov] = None
-        self.posicao_peao_en_passant: list[tuple[int, int]] = []
-        self.posicao_alvo_en_passant: tuple[int, int] = None
-
-        self.vitoria_negras:    bool = False
-        self.vitoria_brancas:   bool = False
-        self.empate:            bool = False
 
         self.posicoes_jogadas: list[str] = []
 
@@ -193,9 +176,9 @@ class Engine:
         pos_captura = mov.destino
 
         if isinstance(p, Peao):
-            if self.en_passant is not None:
-                if mov.destino == self.en_passant[0]:
-                    pos_captura = self.posicao_alvo_en_passant
+            if self.state.en_passant is not None:
+                if mov.destino == self.state.en_passant[0]:
+                    pos_captura = self.state.posicao_alvo_en_passant
                     peca_capturada = self.state.board.matriz[pos_captura[0], pos_captura[1]]
 
         foi_promocao = False
@@ -208,13 +191,13 @@ class Engine:
             peca_movida=p,
             peca_capturada=peca_capturada,
             pos_peca_capturada=pos_captura,
-            roque_curto_branco=self.roque_curto_branco,
-            roque_longo_branco=self.roque_longo_branco,
-            roque_curto_preto=self.roque_curto_preto,
-            roque_longo_preto=self.roque_longo_preto,
-            en_passant=self.en_passant,
-            posicao_peao_en_passant=self.posicao_peao_en_passant.copy(),
-            posicao_alvo_en_passant=self.posicao_alvo_en_passant,
+            roque_curto_branco=self.state.roque_curto_branco,
+            roque_longo_branco=self.state.roque_longo_branco,
+            roque_curto_preto=self.state.roque_curto_preto,
+            roque_longo_preto=self.state.roque_longo_preto,
+            en_passant=self.state.en_passant,
+            posicao_peao_en_passant=self.state.posicao_peao_en_passant.copy(),
+            posicao_alvo_en_passant=self.state.posicao_alvo_en_passant,
             halfmove_clock=self.halfmove_clock,
             ultimo_mov=self.ultimo_mov,
             foi_promocao=foi_promocao
@@ -226,17 +209,17 @@ class Engine:
         if not interno:
             self.limpar_movimentos()
 
-        self.en_passant = None
-        self.posicao_peao_en_passant = []
-        self.posicao_alvo_en_passant = None
+        self.state.en_passant = None
+        self.state.posicao_peao_en_passant = []
+        self.state.posicao_alvo_en_passant = None
 
         if isinstance(p, Torre):
             self._remover_direito_roque(p.cor, mov.origem[1])
         
-        if mov.destino == (7, 7): self.roque_curto_branco = False
-        elif mov.destino == (7, 0): self.roque_longo_branco = False
-        elif mov.destino == (0, 7): self.roque_curto_preto = False
-        elif mov.destino == (0, 0): self.roque_longo_preto = False
+        if mov.destino == (7, 7):   self.state.roque_curto_branco = False
+        elif mov.destino == (7, 0): self.state.roque_longo_branco = False
+        elif mov.destino == (0, 7): self.state.roque_curto_preto  = False
+        elif mov.destino == (0, 0): self.state.roque_longo_preto  = False
 
         if isinstance(p, Rei):
             distancia_c = mov.destino[1] - mov.origem[1]
@@ -244,11 +227,11 @@ class Engine:
                 self._mover_torre_roque(p.cor, distancia_c)
             
             if p.cor == Cor.BRANCO:
-                self.roque_curto_branco = False
-                self.roque_longo_branco = False
+                self.state.roque_curto_branco = False
+                self.state.roque_longo_branco = False
             else:
-                self.roque_curto_preto = False
-                self.roque_longo_preto = False
+                self.state.roque_curto_preto = False
+                self.state.roque_longo_preto = False
 
         if isinstance(p, Peao):
             distancia_l = mov.destino[0] - mov.origem[0]
@@ -259,15 +242,15 @@ class Engine:
                 else:
                     direcao = -1
                 
-                self.en_passant = [(linha + direcao, coluna), TipoMov.CAPTURA]
-                self.posicao_alvo_en_passant = mov.destino
+                self.state.en_passant = [(linha + direcao, coluna), TipoMov.CAPTURA]
+                self.state.posicao_alvo_en_passant = mov.destino
                 for dc in (-1, 1):
                     c_viz = coluna + dc
                     if self.lc_valido(linha, c_viz):
                         v = self.state.board.matriz[linha, c_viz]
                         if isinstance(v, Peao):
                             if v.cor != p.cor:
-                                self.posicao_peao_en_passant.append((linha, c_viz))
+                                self.state.posicao_peao_en_passant.append((linha, c_viz))
 
         self.state.board.matriz[mov.destino[0], mov.destino[1]] = p
         self.state.board.matriz[mov.origem[0], mov.origem[1]] = None
@@ -312,17 +295,17 @@ class Engine:
         estado = self.historico.pop()
         mov = estado.movimento
 
-        if self.turno == Cor.BRANCO:
-            self.fullmove_number -= 1
+        if self.state.turno == Cor.BRANCO:
+            self.state.fullmove_number -= 1
         self.mudar_turno()
 
-        self.roque_curto_branco = estado.roque_curto_branco
-        self.roque_longo_branco = estado.roque_longo_branco
-        self.roque_curto_preto = estado.roque_curto_preto
-        self.roque_longo_preto = estado.roque_longo_preto
-        self.en_passant = estado.en_passant
-        self.posicao_peao_en_passant = estado.posicao_peao_en_passant
-        self.posicao_alvo_en_passant = estado.posicao_alvo_en_passant
+        self.state.roque_curto_branco = estado.roque_curto_branco
+        self.state.roque_longo_branco = estado.roque_longo_branco
+        self.state.roque_curto_preto = estado.roque_curto_preto
+        self.state.roque_longo_preto = estado.roque_longo_preto
+        self.state.en_passant = estado.en_passant
+        self.state.posicao_peao_en_passant = estado.posicao_peao_en_passant
+        self.state.posicao_alvo_en_passant = estado.posicao_alvo_en_passant
         self.halfmove_clock = estado.halfmove_clock
         self.ultimo_mov = estado.ultimo_mov
         self.aguardando_promocao = False
@@ -390,11 +373,11 @@ class Engine:
             coluna (int): Coluna da torre.
         """
         if cor == Cor.BRANCO:
-            if coluna == 0: self.roque_longo_branco = False
-            if coluna == 7: self.roque_curto_branco = False
+            if coluna == 0: self.state.roque_longo_branco = False
+            if coluna == 7: self.state.roque_curto_branco = False
         else:
-            if coluna == 0: self.roque_longo_preto = False
-            if coluna == 7: self.roque_curto_preto = False
+            if coluna == 0: self.state.roque_longo_preto = False
+            if coluna == 7: self.state.roque_curto_preto = False
 
 
     def _mover_torre_roque(self, cor: Cor, distancia_c: int) -> None:
@@ -433,12 +416,12 @@ class Engine:
             self.halfmove_clock += 1
 
         self.mudar_turno()
-        if self.turno == Cor.BRANCO:
-            self.fullmove_number += 1
+        if self.state.turno == Cor.BRANCO:
+            self.state.fullmove_number += 1
         
         if not interno:
             self.posicoes_jogadas.append(self.exportar_posicao_fen())
-            self._verificar_fim_de_jogo(cor_atual=self.turno)
+            self._verificar_fim_de_jogo(cor_atual=self.state.turno)
 
 
     def promover_peao(self, novo_tipo: TipoPeca):
@@ -477,7 +460,7 @@ class Engine:
                     
                     if isinstance(p, Rei):
                         self._adicionar_roques(cor, candidatos)
-                    if isinstance(p, Peao) and p.posicao in self.posicao_peao_en_passant:
+                    if isinstance(p, Peao) and p.posicao in self.state.posicao_peao_en_passant:
                         self._adicionar_en_passant(candidatos)
                     
                     for destino, _ in candidatos:
@@ -513,7 +496,7 @@ class Engine:
     @property
     def finalizado(self) -> bool:
         """Retorna True se o jogo acabou (Vitória ou Empate)."""
-        return self.vitoria_brancas or self.vitoria_negras or self.empate
+        return self.state.vitoria_brancas or self.state.vitoria_negras or self.state.empate
 
 
     def _verificar_xeque_mate_ou_afogamento(
@@ -534,15 +517,15 @@ class Engine:
 
         if self.verificar_xeque(cor_atual):
             if cor_atual == Cor.BRANCO:
-                self.vitoria_negras = True
+                self.state.vitoria_negras = True
                 cor_vencedora = "Pretas"
             else:
-                self.vitoria_brancas = True
+                self.state.vitoria_brancas = True
                 cor_vencedora = "Brancas"
 
             print(f"Xeque-Mate! Vitória das {cor_vencedora}.")
         else:
-            self.empate = True
+            self.state.empate = True
             print("Empate por afogamento (Stalemate).")
 
         return True
@@ -556,7 +539,7 @@ class Engine:
             bool: True se houver empate.
         """
         if self.halfmove_clock >= 100:
-            self.empate = True
+            self.state.empate = True
             print("Empate pela regra dos 50 lances.")
             return True
 
@@ -571,7 +554,7 @@ class Engine:
             bool: True se houver empate.
         """
         if self._verificar_insuficiencia_material():
-            self.empate = True
+            self.state.empate = True
             print("Empate por insuficiência de material.")
             return True
 
@@ -596,7 +579,7 @@ class Engine:
             posicoes[chave] += 1
 
             if posicoes[chave] >= 3:
-                self.empate = True
+                self.state.empate = True
                 print("Empate por tripla repetição.")
                 return True
 
@@ -687,7 +670,7 @@ class Engine:
         """
         dados = self.ROQUES[(cor, lado)]
 
-        direito = getattr(self, dados["direito"])
+        direito = getattr(self.state, dados["direito"])
 
         if not direito:
             return False
@@ -741,10 +724,10 @@ class Engine:
         """
         Alterna o turno atual entre branco ('w') e preto ('b').
         """
-        if self.turno == Cor.BRANCO:
-            self.turno = Cor.PRETO
+        if self.state.turno == Cor.BRANCO:
+            self.state.turno = Cor.PRETO
         else:
-            self.turno = Cor.BRANCO
+            self.state.turno = Cor.BRANCO
 
 
     def carregar_posicao_fen(self, fen: str) -> None:
@@ -763,9 +746,9 @@ class Engine:
             self.halfmove_clock = 0
             
         if len(partes) > 5:
-            self.fullmove_number = int(partes[5])
+            self.state.fullmove_number = int(partes[5])
         else:
-            self.fullmove_number = 1
+            self.state.fullmove_number = 1
 
         self.state.board.matriz.fill(None)
 
@@ -784,34 +767,34 @@ class Engine:
                     )
                     j += 1
 
-        self.turno = turno
-        self.roque_curto_branco = 'K' in roques
-        self.roque_longo_branco = 'Q' in roques
-        self.roque_curto_preto  = 'k' in roques
-        self.roque_longo_preto  = 'q' in roques
+        self.state.turno = turno
+        self.state.roque_curto_branco = 'K' in roques
+        self.state.roque_longo_branco = 'Q' in roques
+        self.state.roque_curto_preto  = 'k' in roques
+        self.state.roque_longo_preto  = 'q' in roques
 
-        self.en_passant = None
-        self.posicao_alvo_en_passant = None
-        self.posicao_peao_en_passant = []
+        self.state.en_passant = None
+        self.state.posicao_alvo_en_passant = None
+        self.state.posicao_peao_en_passant = []
 
         if ep_square != '-':
             col = ord(ep_square[0]) - ord('a')
             row = 8 - int(ep_square[1])
-            self.en_passant = [(row, col), TipoMov.CAPTURA]
+            self.state.en_passant = [(row, col), TipoMov.CAPTURA]
             
             if turno == Cor.BRANCO:
-                self.posicao_alvo_en_passant = (row + 1, col)
+                self.state.posicao_alvo_en_passant = (row + 1, col)
             else:
-                self.posicao_alvo_en_passant = (row - 1, col)
+                self.state.posicao_alvo_en_passant = (row - 1, col)
             
-            alvo_p = self.posicao_alvo_en_passant
+            alvo_p = self.state.posicao_alvo_en_passant
             for dc in (-1, 1):
                 c_viz = alvo_p[1] + dc
                 if self.lc_valido(alvo_p[0], c_viz):
                     v = self.state.board.matriz[alvo_p[0], c_viz]
                     if isinstance(v, Peao):
                         if v.cor == turno:
-                            self.posicao_peao_en_passant.append((alvo_p[0], c_viz))
+                            self.state.posicao_peao_en_passant.append((alvo_p[0], c_viz))
 
 
     def exportar_posicao_fen(self) -> str:
@@ -846,25 +829,25 @@ class Engine:
             ranks.append(rank)
 
         tabuleiro_str = "/".join(ranks)
-        turno = self.turno
+        turno = self.state.turno
 
         roques = ""
 
-        if self.roque_curto_branco:
+        if self.state.roque_curto_branco:
             roques += "K"
-        if self.roque_longo_branco:
+        if self.state.roque_longo_branco:
             roques += "Q"
-        if self.roque_curto_preto:
+        if self.state.roque_curto_preto:
             roques += "k"
-        if self.roque_longo_preto:
+        if self.state.roque_longo_preto:
             roques += "q"
         if roques == "":
             roques = "-"
         
         ep_square = "-"
 
-        if self.en_passant is not None:
-            linha, coluna = self.en_passant[0]
+        if self.state.en_passant is not None:
+            linha, coluna = self.state.en_passant[0]
 
             arquivo = chr(ord("a") + coluna)
             rank = str(8 - linha)
@@ -872,7 +855,7 @@ class Engine:
             ep_square = f"{arquivo}{rank}"
 
         halfmove_clock = self.halfmove_clock
-        fullmove_number = self.fullmove_number
+        fullmove_number = self.state.fullmove_number
 
         return (
             f"{tabuleiro_str} "
@@ -960,15 +943,15 @@ class Engine:
         )
 
         if isinstance(p, Rei):
-            self._adicionar_roques(self.turno, candidatos)
+            self._adicionar_roques(self.state.turno, candidatos)
         
         if isinstance(p, Peao):
-            if p.posicao in self.posicao_peao_en_passant:
+            if p.posicao in self.state.posicao_peao_en_passant:
                 self._adicionar_en_passant(candidatos)
         
         movimentos_validos = []
         for destino, tipo in candidatos:
-            if self._testar_movimento(destino, origem, self.turno):
+            if self._testar_movimento(destino, origem, self.state.turno):
                 movimentos_validos.append((destino, tipo))
         
         self.movimentos_possiveis = movimentos_validos
@@ -987,7 +970,7 @@ class Engine:
         Returns:
             list: Lista de movimentos com os movimentos de en passant adicionados.
         """
-        mov.append(self.en_passant)
+        mov.append(self.state.en_passant)
 
 
     def _adicionar_roques(

@@ -147,7 +147,7 @@ class Xadrez:
 
             peca_clicada = self.engine.state.board.matriz[l, c]
 
-            if peca_clicada and peca_clicada.cor == self.engine.turno:
+            if peca_clicada and peca_clicada.cor == self.engine.state.turno:
                 self.renderer.sincronizar_peca_ao_tabuleiro(peca_clicada)
 
                 if self.peca_selecionada == peca_clicada:

@@ -152,7 +152,7 @@ class Renderer:
             self.orientacao_tabuleiro = Cor.BRANCO
 
         # Força a sincronização de todas as peças
-        for linha in self.state.board.matriz:
+        for linha in self.engime.state.board.matriz:
             for peca in linha:
                 if peca:
                     self.sincronizar_peca_ao_tabuleiro(peca)
@@ -272,7 +272,7 @@ class Renderer:
         pecas = ['q', 'r', 'b', 'n']
         self.menu_promocao_rects.clear()
 
-        cor_val = self.engine.turno
+        cor_val = self.engine.state.turno
         if hasattr(cor_val, 'value'):
             cor_val = cor_val.value
 
@@ -419,7 +419,7 @@ class Renderer:
         Args:
             surface (Surface): Superficie a ser desenhada.
         """
-        if self.engine.turno == Cor.BRANCO:
+        if self.engine.state.turno == Cor.BRANCO:
             turno = 'Brancas'
         else:
             turno = 'Pretas'
@@ -537,7 +537,7 @@ class Renderer:
         for l in indices:
             linha_str = f"{l} |"
             for c in indices:
-                peca = self.state.board.matriz[l, c]
+                peca = self.engine.state.board.matriz[l, c]
 
                 if peca is None:
                     if (l + c) % 2 == 0:
@@ -559,7 +559,7 @@ class Renderer:
             orientacao_txt = "BRANCAS"
         else:
             orientacao_txt = "PRETAS"
-        if self.engine.turno == Cor.BRANCO:
+        if self.engine.state.turno == Cor.BRANCO:
             turno_txt = "BRANCAS"
         else:
             turno_txt = "PRETAS"
