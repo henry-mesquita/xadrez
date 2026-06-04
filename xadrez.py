@@ -1,7 +1,7 @@
 from constantes import *
 import pygame as pg
 from renderer import Renderer
-from engine import Engine, Movimento
+from logic.engine import Engine, Movimento
 from pygame import Vector2 as vetor
 from pecas.peca import Cor, Peca
 

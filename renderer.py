@@ -3,7 +3,7 @@ import pygame as pg
 from pecas.peca import Cor, Peca
 from pygame import Vector2 as vetor, Surface
 from pathlib import Path
-from engine import Engine, TipoMov
+from logic.engine import Engine, TipoMov
 
 
 class Renderer:
