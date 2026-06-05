@@ -152,7 +152,7 @@ class Renderer:
             self.orientacao_tabuleiro = Cor.BRANCO
 
         # Força a sincronização de todas as peças
-        for linha in self.engime.state.board.matriz:
+        for linha in self.engine.state.board.matriz:
             for peca in linha:
                 if peca:
                     self.sincronizar_peca_ao_tabuleiro(peca)

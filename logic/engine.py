@@ -1,5 +1,4 @@
 from constantes import *
-import numpy as np
 from pecas.peca import Peca, Cor, TipoPeca
 from pecas.bispo import Bispo
 from pecas.cavalo import Cavalo
@@ -12,6 +11,7 @@ from .judge import Judge
 from .generator import Generator
 from .fen_parser import *
 from .state import GameState
+from .factory import criar_peca
 
 
 class Engine:
@@ -21,7 +21,8 @@ class Engine:
     Controla o tabuleiro, valida movimentos, gera movimentos possíveis, gerencia
     turnos e verifica condições de xeque. Totalmente desacoplada da camada visual.
     """
-    MAPA_PECAS: dict[str, type[Peca]] = {
+
+    MAPA_PECAS = {
         'p': Peao,
         'r': Torre,
         'n': Cavalo,
@@ -80,7 +81,11 @@ class Engine:
         self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
         self.pseudo_movimentos:     list[tuple[tuple[int, int], TipoMov]]   = []
 
-        self.carregar_posicao_fen(fen=FEN_INICIAL)
+        carregar_posicao_fen(
+            state=self.state,
+            fen=FEN_INICIAL,
+            board=self.state.board
+        )
 
         self.posicoes_jogadas: list[str] = []
 
@@ -198,7 +203,7 @@ class Engine:
             en_passant=self.state.en_passant,
             posicao_peao_en_passant=self.state.posicao_peao_en_passant.copy(),
             posicao_alvo_en_passant=self.state.posicao_alvo_en_passant,
-            halfmove_clock=self.halfmove_clock,
+            halfmove_clock=self.state.halfmove_clock,
             ultimo_mov=self.ultimo_mov,
             foi_promocao=foi_promocao
         ))
@@ -264,7 +269,7 @@ class Engine:
                     tipo_para_promover = TipoPeca.DAMA
             
             if tipo_para_promover is not None:
-                self.state.board.matriz[mov.destino[0], mov.destino[1]] = self.criar_peca(
+                self.state.board.matriz[mov.destino[0], mov.destino[1]] = criar_peca(
                     tipo=tipo_para_promover.value,
                     cor=p.cor,
                     pos=[mov.destino[0], mov.destino[1]]
@@ -282,14 +287,17 @@ class Engine:
         return True
 
 
-    def desfazer_movimento(self) -> None:
+    def desfazer_movimento(self, interno: bool = False) -> None:
         """
         Reverte o último movimento realizado, restaurando o estado anterior.
+
+        Args:
+            interno (bool): True se o movimento a ser desfeito foi uma simulação interna.
         """
         if len(self.historico) == 0:
             return
-        
-        if self.posicoes_jogadas:
+
+        if not interno and self.posicoes_jogadas:
             self.posicoes_jogadas.pop()
 
         estado = self.historico.pop()
@@ -359,7 +367,7 @@ class Engine:
         """
         self.executar_movimento(Movimento(origem=origem, destino=mov_destino), interno=True)
         em_xeque = self.verificar_xeque(cor)
-        self.desfazer_movimento()
+        self.desfazer_movimento(interno=True)
 
         return not em_xeque
 
@@ -411,16 +419,16 @@ class Engine:
             interno (bool): True se o movimento foi executado pela engine.
         """
         if peao or captura:
-            self.halfmove_clock = 0
+            self.state.halfmove_clock = 0
         else:
-            self.halfmove_clock += 1
+            self.state.halfmove_clock += 1
 
         self.mudar_turno()
         if self.state.turno == Cor.BRANCO:
             self.state.fullmove_number += 1
         
         if not interno:
-            self.posicoes_jogadas.append(self.exportar_posicao_fen())
+            self.posicoes_jogadas.append(exportar_posicao_fen(self.state))
             self._verificar_fim_de_jogo(cor_atual=self.state.turno)
 
 
@@ -434,7 +442,7 @@ class Engine:
         l, c = self.casa_promocao
         peao = self.state.board.matriz[l, c]
 
-        self.state.board.matriz[l, c] = self.criar_peca(tipo=novo_tipo, cor=peao.cor, pos=[l, c])
+        self.state.board.matriz[l, c] = criar_peca(tipo=novo_tipo, cor=peao.cor, pos=[l, c])
         self.casa_promocao = None
         self.aguardando_promocao = False
 
@@ -653,7 +661,7 @@ class Engine:
             interno=True
         )
         atacada = self.verificar_xeque(cor_rei)
-        self.desfazer_movimento()
+        self.desfazer_movimento(interno=True)
         return atacada
 
 
@@ -730,20 +738,24 @@ class Engine:
             self.state.turno = Cor.BRANCO
 
 
-    def carregar_posicao_fen(self, fen: str) -> None:
+    def carregar_posicao_fen(
+        self,
+        fen: str,
+    ) -> None:
         """
         Carrega uma posição de um FEN.
 
         Args:
+            state (GameState): Estado da engine.
             fen (str): FEN da posição.
         """
         partes = fen.strip().split()
         tabuleiro_str, turno, roques, ep_square = partes[:4]
         
         if len(partes) > 4:
-            self.halfmove_clock = int(partes[4])
+            self.state.halfmove_clock = int(partes[4])
         else:
-            self.halfmove_clock = 0
+            self.state.halfmove_clock = 0
             
         if len(partes) > 5:
             self.state.fullmove_number = int(partes[5])
@@ -760,7 +772,7 @@ class Engine:
                     j += int(ch)
                 else:
                     cor_peca = Cor.BRANCO if ch.isupper() else Cor.PRETO
-                    self.state.board.matriz[i, j] = self.criar_peca(
+                    self.state.board.matriz[i, j] = criar_peca(
                         tipo=ch.lower(),
                         cor=cor_peca,
                         pos=[i, j]
@@ -790,99 +802,11 @@ class Engine:
             alvo_p = self.state.posicao_alvo_en_passant
             for dc in (-1, 1):
                 c_viz = alvo_p[1] + dc
-                if self.lc_valido(alvo_p[0], c_viz):
+                if self.state.lc_valido(alvo_p[0], c_viz):
                     v = self.state.board.matriz[alvo_p[0], c_viz]
                     if isinstance(v, Peao):
                         if v.cor == turno:
                             self.state.posicao_peao_en_passant.append((alvo_p[0], c_viz))
-
-
-    def exportar_posicao_fen(self) -> str:
-        """
-        Exporta a posição atual no padrão FEN.
-
-        Returns:
-            str: String FEN da posição atual.
-        """
-
-        ranks = []
-
-        for linha in self.state.board.matriz:
-            rank = ""
-            vazias = 0
-            for peca in linha:
-                if peca is None:
-                    vazias += 1
-                    continue
-                if vazias > 0:
-                    rank += str(vazias)
-                    vazias = 0
-
-                simbolo = peca.tipo.value
-                if peca.cor == Cor.BRANCO:
-                    simbolo = simbolo.upper()
-
-                rank += simbolo
-            if vazias > 0:
-                rank += str(vazias)
-
-            ranks.append(rank)
-
-        tabuleiro_str = "/".join(ranks)
-        turno = self.state.turno
-
-        roques = ""
-
-        if self.state.roque_curto_branco:
-            roques += "K"
-        if self.state.roque_longo_branco:
-            roques += "Q"
-        if self.state.roque_curto_preto:
-            roques += "k"
-        if self.state.roque_longo_preto:
-            roques += "q"
-        if roques == "":
-            roques = "-"
-        
-        ep_square = "-"
-
-        if self.state.en_passant is not None:
-            linha, coluna = self.state.en_passant[0]
-
-            arquivo = chr(ord("a") + coluna)
-            rank = str(8 - linha)
-
-            ep_square = f"{arquivo}{rank}"
-
-        halfmove_clock = self.halfmove_clock
-        fullmove_number = self.state.fullmove_number
-
-        return (
-            f"{tabuleiro_str} "
-            f"{turno} "
-            f"{roques} "
-            f"{ep_square} "
-            f"{halfmove_clock} "
-            f"{fullmove_number}"
-        )
-
-
-    def criar_peca(self, tipo: str, cor: str, pos: list[int]) -> Peca:
-        """
-        Instancia uma peça baseada no tipo e cor fornecidos.
-
-        Args:
-            tipo (str): Caractere representando o tipo da peça.
-            cor (str): 'w' para branco, 'b' para preto.
-            pos (list[int]): Coordenadas [linha, coluna].
-
-        Returns:
-            Peca: Instância da classe da peça correspondente.
-        """
-        return self.MAPA_PECAS[tipo](
-            cor=cor,
-            posicao=pos
-        )
 
 
     def achar_lc_peca(self, peca: Peca) -> tuple[int, int] | None:
