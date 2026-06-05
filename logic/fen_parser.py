@@ -1,24 +1,9 @@
-from pecas.peca import Cor, Peca
+from pecas.peca import Cor
 from pecas.peao import Peao
-from pecas.torre import Torre
-from pecas.cavalo import Cavalo
-from pecas.bispo import Bispo
-from pecas.dama import Dama
-from pecas.rei import Rei
 from .state import GameState
 from .move import TipoMov
 from .board import Board
 from .factory import criar_peca
-
-
-MAPA_PECAS: dict[str, type[Peca]] = {
-    'p': Peao,
-    'r': Torre,
-    'n': Cavalo,
-    'b': Bispo,
-    'q': Dama,
-    'k': Rei
-}
 
 
 def carregar_posicao_fen(
@@ -86,7 +71,7 @@ def carregar_posicao_fen(
         alvo_p = state.posicao_alvo_en_passant
         for dc in (-1, 1):
             c_viz = alvo_p[1] + dc
-            if state.lc_valido(alvo_p[0], c_viz):
+            if Board.lc_valido(alvo_p[0], c_viz):
                 v = state.board.matriz[alvo_p[0], c_viz]
                 if isinstance(v, Peao):
                     if v.cor == turno:

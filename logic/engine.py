@@ -22,15 +22,6 @@ class Engine:
     turnos e verifica condições de xeque. Totalmente desacoplada da camada visual.
     """
 
-    MAPA_PECAS = {
-        'p': Peao,
-        'r': Torre,
-        'n': Cavalo,
-        'b': Bispo,
-        'q': Dama,
-        'k': Rei
-    }
-
     ROQUES = {
         (Cor.BRANCO, "curto"): {
             "direito": "roque_curto_branco",
@@ -251,7 +242,7 @@ class Engine:
                 self.state.posicao_alvo_en_passant = mov.destino
                 for dc in (-1, 1):
                     c_viz = coluna + dc
-                    if self.lc_valido(linha, c_viz):
+                    if self.state.board.lc_valido(linha, c_viz):
                         v = self.state.board.matriz[linha, c_viz]
                         if isinstance(v, Peao):
                             if v.cor != p.cor:
@@ -738,77 +729,6 @@ class Engine:
             self.state.turno = Cor.BRANCO
 
 
-    def carregar_posicao_fen(
-        self,
-        fen: str,
-    ) -> None:
-        """
-        Carrega uma posição de um FEN.
-
-        Args:
-            state (GameState): Estado da engine.
-            fen (str): FEN da posição.
-        """
-        partes = fen.strip().split()
-        tabuleiro_str, turno, roques, ep_square = partes[:4]
-        
-        if len(partes) > 4:
-            self.state.halfmove_clock = int(partes[4])
-        else:
-            self.state.halfmove_clock = 0
-            
-        if len(partes) > 5:
-            self.state.fullmove_number = int(partes[5])
-        else:
-            self.state.fullmove_number = 1
-
-        self.state.board.matriz.fill(None)
-
-        ranks = tabuleiro_str.split('/')
-        for i, rank in enumerate(ranks):
-            j = 0
-            for ch in rank:
-                if ch.isdigit():
-                    j += int(ch)
-                else:
-                    cor_peca = Cor.BRANCO if ch.isupper() else Cor.PRETO
-                    self.state.board.matriz[i, j] = criar_peca(
-                        tipo=ch.lower(),
-                        cor=cor_peca,
-                        pos=[i, j]
-                    )
-                    j += 1
-
-        self.state.turno = turno
-        self.state.roque_curto_branco = 'K' in roques
-        self.state.roque_longo_branco = 'Q' in roques
-        self.state.roque_curto_preto  = 'k' in roques
-        self.state.roque_longo_preto  = 'q' in roques
-
-        self.state.en_passant = None
-        self.state.posicao_alvo_en_passant = None
-        self.state.posicao_peao_en_passant = []
-
-        if ep_square != '-':
-            col = ord(ep_square[0]) - ord('a')
-            row = 8 - int(ep_square[1])
-            self.state.en_passant = [(row, col), TipoMov.CAPTURA]
-            
-            if turno == Cor.BRANCO:
-                self.state.posicao_alvo_en_passant = (row + 1, col)
-            else:
-                self.state.posicao_alvo_en_passant = (row - 1, col)
-            
-            alvo_p = self.state.posicao_alvo_en_passant
-            for dc in (-1, 1):
-                c_viz = alvo_p[1] + dc
-                if self.state.lc_valido(alvo_p[0], c_viz):
-                    v = self.state.board.matriz[alvo_p[0], c_viz]
-                    if isinstance(v, Peao):
-                        if v.cor == turno:
-                            self.state.posicao_peao_en_passant.append((alvo_p[0], c_viz))
-
-
     def achar_lc_peca(self, peca: Peca) -> tuple[int, int] | None:
         """
         Encontra a linha e coluna de uma instância de peça na matriz.
@@ -1102,7 +1022,7 @@ class Engine:
             while True:
                 l += direcao[0]
                 c += direcao[1]
-                if not self.lc_valido(linha=l, coluna=c):
+                if not self.state.board.lc_valido(linha=l, coluna=c):
                     break
                 destino = self.state.board.matriz[l, c]
                 if destino is None:
@@ -1130,7 +1050,7 @@ class Engine:
             while True:
                 l += direcao[0]
                 c += direcao[1]
-                if not self.lc_valido(linha=l, coluna=c): break
+                if not self.state.board.lc_valido(linha=l, coluna=c): break
                 destino = self.state.board.matriz[l, c]
                 if destino is None: continue
                 if destino.cor != cor and isinstance(destino, (Bispo, Dama)):
@@ -1162,7 +1082,7 @@ class Engine:
         ]
         for offset in offsets_cavalo:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
-            if self.lc_valido(linha=l, coluna=c):
+            if self.state.board.lc_valido(linha=l, coluna=c):
                 destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Cavalo) and destino.cor != cor:
                     return True
@@ -1192,7 +1112,7 @@ class Engine:
         ]
         for offset in offsets_rei:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
-            if self.lc_valido(linha=l, coluna=c):
+            if self.state.board.lc_valido(linha=l, coluna=c):
                 destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Rei) and destino.cor != cor:
                     return True
@@ -1214,19 +1134,8 @@ class Engine:
         offsets_peao = [(direcao, -1), (direcao, 1)]
         for offset in offsets_peao:
             l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
-            if self.lc_valido(linha=l, coluna=c):
+            if self.state.board.lc_valido(linha=l, coluna=c):
                 destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Peao) and destino.cor != cor:
                     return True
         return False
-
-
-    @staticmethod
-    def lc_valido(linha: int, coluna: int) -> bool:
-        """
-        Verifica se a coordenada informada está dentro dos limites do tabuleiro.
-
-        Returns:
-            bool: True se válida, False caso contrário.
-        """
-        return 0 <= linha < 8 and 0 <= coluna < 8 

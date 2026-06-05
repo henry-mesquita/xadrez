@@ -142,7 +142,7 @@ class Xadrez:
         if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             l, c = self.renderer.obter_lc_pelo_mouse()
 
-            if not self.engine.lc_valido(l, c):
+            if not self.engine.state.board.lc_valido(l, c):
                 return None, None
 
             peca_clicada = self.engine.state.board.matriz[l, c]
