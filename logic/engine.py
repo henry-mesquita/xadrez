@@ -78,8 +78,6 @@ class Engine:
             board=self.state.board
         )
 
-        self.posicoes_jogadas: list[str] = []
-
         self.casa_promocao: tuple[int, int] | None = None
         self.aguardando_promocao = False
         self.ultimo_mov: Movimento | None = None
@@ -288,8 +286,8 @@ class Engine:
         if len(self.historico) == 0:
             return
 
-        if not interno and self.posicoes_jogadas:
-            self.posicoes_jogadas.pop()
+        if not interno and self.state.posicoes_jogadas:
+            self.state.posicoes_jogadas.pop()
 
         estado = self.historico.pop()
         mov = estado.movimento
@@ -419,7 +417,7 @@ class Engine:
             self.state.fullmove_number += 1
         
         if not interno:
-            self.posicoes_jogadas.append(exportar_posicao_fen(self.state))
+            self.state.posicoes_jogadas.append(exportar_posicao_fen(self.state))
             self._verificar_fim_de_jogo(cor_atual=self.state.turno)
 
 
@@ -569,7 +567,7 @@ class Engine:
         """
         posicoes = {}
 
-        for fen in self.posicoes_jogadas:
+        for fen in self.state.posicoes_jogadas:
             chave = " ".join(fen.split()[:4])
 
             if chave not in posicoes:

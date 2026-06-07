@@ -120,7 +120,7 @@ class Xadrez:
         if sucesso:
             self.engine.executar_movimento(mov=mov)
             self.renderer.sincronizar_todas_pecas()
-            
+
             self.peca_selecionada = None
             self.origem_selecionada = None
 

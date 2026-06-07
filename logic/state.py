@@ -7,7 +7,9 @@ class GameState:
     board: Board = field(default_factory=Board)
     
     turno: Cor = Cor.BRANCO
-    
+
+    posicoes_jogadas: list[str] = field(default_factory=list)
+
     # Direitos de roque
     roque_curto_branco: bool = True
     roque_longo_branco: bool = True
