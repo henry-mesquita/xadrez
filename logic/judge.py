@@ -7,13 +7,51 @@ from pecas.cavalo import Cavalo
 from pecas.rei import Rei
 from .board import Board
 from .state import GameState
-from .move import TipoMov
+from .move import TipoMov, Movimento
 import numpy as np
 
 
 class Judge:
-    def __init__(self, board: Board) -> None:
-        self.board: Board = board
+    ROQUES = {
+        (Cor.BRANCO, "curto"): {
+            "direito": "roque_curto_branco",
+            "origem_rei": (7, 4),
+            "destino_rei": (7, 6),
+            "origem_torre": (7, 7),
+            "destino_torre": (7, 5),
+            "casas_seguras": [(7, 5), (7, 6)]
+        },
+
+        (Cor.BRANCO, "longo"): {
+            "direito": "roque_longo_branco",
+            "origem_rei": (7, 4),
+            "destino_rei": (7, 2),
+            "origem_torre": (7, 0),
+            "destino_torre": (7, 3),
+            "casas_seguras": [(7, 3), (7, 2)]
+        },
+
+        (Cor.PRETO, "curto"): {
+            "direito": "roque_curto_preto",
+            "origem_rei": (0, 4),
+            "destino_rei": (0, 6),
+            "origem_torre": (0, 7),
+            "destino_torre": (0, 5),
+            "casas_seguras": [(0, 5), (0, 6)]
+        },
+
+        (Cor.PRETO, "longo"): {
+            "direito": "roque_longo_preto",
+            "origem_rei": (0, 4),
+            "destino_rei": (0, 2),
+            "origem_torre": (0, 0),
+            "destino_torre": (0, 3),
+            "casas_seguras": [(0, 3), (0, 2)]
+        }
+    }
+
+    def __init__(self, state: Board) -> None:
+        self.state: GameState = state
 
 
     def classificar_movimentos(
@@ -62,7 +100,7 @@ class Judge:
         Returns:
             TipoMov | None: Tipo do movimento se válido, None caso contrário.
         """
-        destino = self.board.matriz[destino_lc[0], destino_lc[1]]
+        destino = self.state.board.matriz[destino_lc[0], destino_lc[1]]
 
         if isinstance(peca, Peao):
             delta = (destino_lc[0] - origem[0], destino_lc[1] - origem[1])
@@ -80,7 +118,7 @@ class Judge:
 
             if delta == double_forward:
                 meio = (origem[0] + forward[0], origem[1])
-                if destino is None and self.board.matriz[meio[0], meio[1]] is None:
+                if destino is None and self.state.board.matriz[meio[0], meio[1]] is None:
                     return TipoMov.NORMAL
                 return None
 
@@ -95,7 +133,7 @@ class Judge:
             if not self.caminho_livre(
                 origem=origem,
                 destino=destino_lc,
-                matriz=self.board.matriz
+                matriz=self.state.board.matriz
             ):
                 return None
 
@@ -138,7 +176,95 @@ class Judge:
         return True
 
 
-    def verificar_xeque(self, cor: str, state: GameState) -> bool:
+    def adicionar_en_passant(self, mov: list) -> None:
+        """
+        Adiciona as casas de en passant na lista de movimentos possíveis.
+
+        Args:
+            mov (list): Lista de movimentos.
+
+        Returns:
+            list: Lista de movimentos com os movimentos de en passant adicionados.
+        """
+        mov.append(self.state.en_passant)
+    
+
+    def adicionar_roques(
+        self,
+        cor: str,
+        mov: list,
+        xeque: bool
+    ) -> list[tuple[int, int], TipoMov]:
+        if self.verificar_roque(cor, "curto", xeque):
+            destino = (
+                self.ROQUES[(cor, "curto")]["destino_rei"]
+            )
+
+            mov.append((destino, TipoMov.ROQUE_CURTO))
+
+        if self.verificar_roque(cor, "longo", xeque):
+            destino = (
+                self.ROQUES[(cor, "longo")]["destino_rei"]
+            )
+
+            mov.append((destino, TipoMov.ROQUE_LONGO))
+
+        return mov
+
+
+    def verificar_roque(
+        self,
+        cor: Cor,
+        lado: str,
+        xeque: bool
+    ) -> bool:
+        """
+        Retorna True se o roque pode ser realizado.
+
+        Args:
+            cor (str): Cor do rei.
+            lado (str): "curto" ou "longo".
+
+        Returns:
+            bool: True se o roque pode ser realizado, False caso contrário.
+        """
+        dados = self.ROQUES[(cor, lado)]
+
+        direito = getattr(self.state, dados["direito"])
+
+        if not direito:
+            return False
+
+        if xeque:
+            return False
+
+        if not self.caminho_livre(
+            origem=dados["origem_rei"],
+            destino=dados["origem_torre"],
+            matriz=self.state.board.matriz
+        ):
+            return False
+
+        for l, c in dados["casas_seguras"]:
+            if self.casa_atacada(l, c, cor):
+                return False
+
+        return True
+
+
+    def casa_atacada(self, l: int, c: int, cor_que_seria_atacada: str) -> bool:
+        pos = (l, c)
+        
+        horizontais = self.verificar_horizontais(pos, cor_que_seria_atacada)
+        diagonais   = self.verificar_diagonais(pos, cor_que_seria_atacada)
+        cavalo      = self.verificar_cavalo(pos, cor_que_seria_atacada)
+        rei         = self.verificar_rei(pos, cor_que_seria_atacada)
+        peao        = self.verificar_peao(pos, cor_que_seria_atacada)
+
+        return horizontais or diagonais or cavalo or rei or peao
+
+
+    def verificar_xeque(self, cor: str) -> bool:
         """
         Verifica se o rei da cor informada está sob ataque.
 
@@ -152,44 +278,38 @@ class Judge:
         if cor not in (Cor.PRETO, Cor.BRANCO):
             raise ValueError('Cor precisa ser "w" ou "b"')
         
-        lc_rei = state.board.achar_lc_rei(cor=cor)
+        lc_rei = self.state.board.achar_lc_rei(cor=cor)
         if lc_rei is None:
             return False
 
-        horizontais = self._verificar_horizontais(
-            lc_rei=lc_rei,
-            cor=cor,
-            state=state
+        horizontais = self.verificar_horizontais(
+            pos=lc_rei,
+            cor_defendendo=cor
         )
-        diagonais = self._verificar_diagonais(
-            lc_rei=lc_rei,
-            cor=cor,
-            state=state
+        diagonais = self.verificar_diagonais(
+            pos=lc_rei,
+            cor_defendendo=cor
         )
-        cavalo = self._verificar_cavalo(
-            lc_rei=lc_rei,
-            cor=cor,
-            state=state
+        cavalo = self.verificar_cavalo(
+            pos=lc_rei,
+            cor_defendendo=cor
         )
-        rei = self._verificar_rei(
-            lc_rei=lc_rei,
-            cor=cor,
-            state=state
+        rei = self.verificar_rei(
+            pos=lc_rei,
+            cor_defendendo=cor
         )
-        peao = self._verificar_peao(
-            lc_rei=lc_rei,
-            cor=cor,
-            state=state
+        peao = self.verificar_peao(
+            pos=lc_rei,
+            cor_defendendo=cor
         )
 
         return horizontais or diagonais or cavalo or rei or peao
-    
 
-    @staticmethod
-    def _verificar_horizontais(
-        lc_rei: tuple[int, int],
-        cor: str,
-        state: GameState
+
+    def verificar_horizontais(
+        self,
+        pos: tuple[int, int],
+        cor_defendendo: str
     ) -> bool:
         """
         Verifica se o rei estiver sob ataque por peças horizontais.
@@ -208,26 +328,25 @@ class Judge:
             (-1, 0)
         )
         for direcao in direcoes_horizontais:
-            l, c = lc_rei
+            l, c = pos
             while True:
                 l += direcao[0]
                 c += direcao[1]
-                if not state.board.lc_valido(linha=l, coluna=c):
+                if not self.state.board.lc_valido(linha=l, coluna=c):
                     break
-                destino = state.board.matriz[l, c]
+                destino = self.state.board.matriz[l, c]
                 if destino is None:
                     continue
-                if destino.cor != cor and isinstance(destino, (Torre, Dama)):
+                if destino.cor != cor_defendendo and isinstance(destino, (Torre, Dama)):
                     return True
                 break
         return False
 
 
-    @staticmethod
-    def _verificar_diagonais(
-        lc_rei: tuple[int, int],
-        cor: str,
-        state: GameState
+    def verificar_diagonais(
+        self,
+        pos: tuple[int, int],
+        cor_defendendo: str
     ) -> bool:
         """
         Verifica se o rei estiver sob ataque por peças diagonais.
@@ -247,24 +366,23 @@ class Judge:
         )
 
         for direcao in direcoes_diagonais:
-            l, c = lc_rei
+            l, c = pos
             while True:
                 l += direcao[0]
                 c += direcao[1]
-                if not state.board.lc_valido(linha=l, coluna=c): break
-                destino = state.board.matriz[l, c]
+                if not self.state.board.lc_valido(linha=l, coluna=c): break
+                destino = self.state.board.matriz[l, c]
                 if destino is None: continue
-                if destino.cor != cor and isinstance(destino, (Bispo, Dama)):
+                if destino.cor != cor_defendendo and isinstance(destino, (Bispo, Dama)):
                     return True
                 break
         return False
 
 
-    @staticmethod
-    def _verificar_cavalo(
-        lc_rei: tuple[int, int],
-        cor: str,
-        state: GameState
+    def verificar_cavalo(
+        self,
+        pos: tuple[int, int],
+        cor_defendendo: str
     ) -> bool:
         """
         Verifica se o rei estiver sob ataque por peças de cavalo.
@@ -287,19 +405,18 @@ class Judge:
             (1, 2)
         )
         for offset in offsets_cavalo:
-            l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
-            if state.board.lc_valido(linha=l, coluna=c):
-                destino = state.board.matriz[l, c]
-                if destino and isinstance(destino, Cavalo) and destino.cor != cor:
+            l, c = pos[0] + offset[0], pos[1] + offset[1]
+            if self.state.board.lc_valido(linha=l, coluna=c):
+                destino = self.state.board.matriz[l, c]
+                if destino and isinstance(destino, Cavalo) and destino.cor != cor_defendendo:
                     return True
         return False
 
 
-    @staticmethod
-    def _verificar_rei(
-        lc_rei: tuple[int, int],
-        cor: str,
-        state: GameState
+    def verificar_rei(
+        self,
+        pos: tuple[int, int],
+        cor_defendendo: str
     ) -> bool:
         """
         Verifica se o rei estiver sob ataque por peças de rei.
@@ -322,19 +439,18 @@ class Judge:
             (0, 1)
         )
         for offset in offsets_rei:
-            l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
-            if state.board.lc_valido(linha=l, coluna=c):
-                destino = state.board.matriz[l, c]
-                if destino and isinstance(destino, Rei) and destino.cor != cor:
+            l, c = pos[0] + offset[0], pos[1] + offset[1]
+            if self.state.board.lc_valido(linha=l, coluna=c):
+                destino = self.state.board.matriz[l, c]
+                if destino and isinstance(destino, Rei) and destino.cor != cor_defendendo:
                     return True
         return False
 
 
-    @staticmethod
-    def _verificar_peao(
-        lc_rei: tuple[int, int],
-        cor: str,
-        state: GameState
+    def verificar_peao(
+        self,
+        pos: tuple[int, int],
+        cor_defendendo: str
     ) -> bool:
         """
         Verifica se o rei estiver sob ataque por peças de peão.
@@ -346,16 +462,16 @@ class Judge:
         Returns:
             bool: True se estiver em xeque, False caso contrário.
         """
-        direcao = -1 if cor == Cor.BRANCO else 1
+        direcao = -1 if cor_defendendo == Cor.BRANCO else 1
         offsets_peao = (
             (direcao, -1),
             (direcao, 1)
         )
 
         for offset in offsets_peao:
-            l, c = lc_rei[0] + offset[0], lc_rei[1] + offset[1]
-            if state.board.lc_valido(linha=l, coluna=c):
-                destino = state.board.matriz[l, c]
-                if destino and isinstance(destino, Peao) and destino.cor != cor:
+            l, c = pos[0] + offset[0], pos[1] + offset[1]
+            if self.state.board.lc_valido(linha=l, coluna=c):
+                destino = self.state.board.matriz[l, c]
+                if destino and isinstance(destino, Peao) and destino.cor != cor_defendendo:
                     return True
         return False

@@ -21,51 +21,12 @@ class Engine:
     turnos e verifica condições de xeque. Totalmente desacoplada da camada visual.
     """
 
-    ROQUES = {
-        (Cor.BRANCO, "curto"): {
-            "direito": "roque_curto_branco",
-            "origem_rei": (7, 4),
-            "destino_rei": (7, 6),
-            "origem_torre": (7, 7),
-            "destino_torre": (7, 5),
-            "casas_seguras": [(7, 5), (7, 6)]
-        },
-
-        (Cor.BRANCO, "longo"): {
-            "direito": "roque_longo_branco",
-            "origem_rei": (7, 4),
-            "destino_rei": (7, 2),
-            "origem_torre": (7, 0),
-            "destino_torre": (7, 3),
-            "casas_seguras": [(7, 3), (7, 2)]
-        },
-
-        (Cor.PRETO, "curto"): {
-            "direito": "roque_curto_preto",
-            "origem_rei": (0, 4),
-            "destino_rei": (0, 6),
-            "origem_torre": (0, 7),
-            "destino_torre": (0, 5),
-            "casas_seguras": [(0, 5), (0, 6)]
-        },
-
-        (Cor.PRETO, "longo"): {
-            "direito": "roque_longo_preto",
-            "origem_rei": (0, 4),
-            "destino_rei": (0, 2),
-            "origem_torre": (0, 0),
-            "destino_torre": (0, 3),
-            "casas_seguras": [(0, 3), (0, 2)]
-        }
-    }
-
-
     def __init__(self) -> None:
         """
         Inicializa a engine com o tabuleiro vazio e carrega a posição inicial.
         """
         self.state: GameState       = GameState()
-        self.judge: Judge           = Judge(self.state.board)
+        self.judge: Judge           = Judge(self.state)
 
         self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
         self.pseudo_movimentos:     list[tuple[tuple[int, int], TipoMov]]   = []
@@ -353,10 +314,43 @@ class Engine:
             bool: True se o movimento for valido, False caso contrário.
         """
         self.executar_movimento(Movimento(origem=origem, destino=mov_destino), interno=True)
-        em_xeque = self.judge.verificar_xeque(cor=cor, state=self.state)
+        em_xeque = self.judge.verificar_xeque(cor=cor)
         self.desfazer_movimento(interno=True)
 
         return not em_xeque
+
+
+    def _tem_movimentos_legais(self, cor: str) -> bool:
+        """
+        Verifica se o jogador da cor atual possui pelo menos um movimento legal.
+
+        Args:
+            cor (str): Cor do jogador.
+
+        Returns:
+            bool: True se o jogador possui pelo menos um movimento legal.
+        """
+        for li in range(8):
+            for co in range(8):
+                p = self.state.board.matriz[li, co]
+                if p is not None and p.cor == cor:
+                    pseudo = p.gerar_pseudo_movimentos(lc=(li, co))
+                    candidatos = self.judge.classificar_movimentos(p, (li, co), pseudo)
+                    
+                    if isinstance(p, Rei):
+                        self.judge.adicionar_roques(
+                            cor,
+                            candidatos,
+                            self.judge.verificar_xeque(cor)
+                        )
+                    if isinstance(p, Peao) and p.posicao in self.state.posicao_peao_en_passant:
+                        self.judge.adicionar_en_passant(candidatos)
+                    
+                    for destino, _ in candidatos:
+                        if self._testar_movimento(destino, (li, co), cor):
+                            return True
+                            
+        return False
 
 
     def _remover_direito_roque(self, cor: Cor, coluna: int) -> None:
@@ -434,35 +428,6 @@ class Engine:
         self.aguardando_promocao = False
 
         self._finalizar_turno(captura=False, peao=True, interno=False)
-
-
-    def _tem_movimentos_legais(self, cor: str) -> bool:
-        """
-        Verifica se o jogador da cor atual possui pelo menos um movimento legal.
-
-        Args:
-            cor (str): Cor do jogador.
-
-        Returns:
-            bool: True se o jogador possui pelo menos um movimento legal.
-        """
-        for li in range(8):
-            for co in range(8):
-                p = self.state.board.matriz[li, co]
-                if p is not None and p.cor == cor:
-                    pseudo = p.gerar_pseudo_movimentos(lc=(li, co))
-                    candidatos = self.judge.classificar_movimentos(p, (li, co), pseudo)
-                    
-                    if isinstance(p, Rei):
-                        self._adicionar_roques(cor, candidatos)
-                    if isinstance(p, Peao) and p.posicao in self.state.posicao_peao_en_passant:
-                        self._adicionar_en_passant(candidatos)
-                    
-                    for destino, _ in candidatos:
-                        if self._testar_movimento(destino, (li, co), cor):
-                            return True
-                            
-        return False
     
 
     def _contagem_material(self) -> dict:
@@ -624,69 +589,15 @@ class Engine:
         """
         lado = "curto" if distancia_c > 0 else "longo"
 
-        if self.verificar_roque(cor, lado):
+        if self.judge.verificar_roque(
+            cor,
+            lado,
+            self.verificar_xeque(cor)
+        ):
             self.executar_roque(cor, lado)
             return True
 
         return False
-
-
-    def _casa_atacada(self, l: int, c: int, cor_rei: str) -> bool:
-        """
-        Método auxiliar para checar se uma casa específica está sob ataque.
-
-        Args:
-            l (int): Linha da casa.
-            c (int): Coluna da casa.
-            cor_rei (str): Cor do rei.
-
-        Returns:
-            bool: True se a casa estiver sob ataque, False caso contrário.
-        """
-        pos_original = self.state.board.achar_lc_rei(cor=cor_rei)
-        self.executar_movimento(Movimento(
-            origem=pos_original,
-            destino=(l, c)),
-            interno=True
-        )
-        atacada = self.judge.verificar_xeque(cor=cor_rei, state=self.state)
-        self.desfazer_movimento(interno=True)
-        return atacada
-
-
-    def verificar_roque(self, cor: Cor, lado: str) -> bool:
-        """
-        Retorna True se o roque pode ser realizado.
-
-        Args:
-            cor (str): Cor do rei.
-            lado (str): "curto" ou "longo".
-
-        Returns:
-            bool: True se o roque pode ser realizado, False caso contrário.
-        """
-        dados = self.ROQUES[(cor, lado)]
-
-        direito = getattr(self.state, dados["direito"])
-
-        if not direito:
-            return False
-
-        if self.judge.verificar_xeque(cor=cor, state=self.state):
-            return False
-
-        if not self.judge.caminho_livre(
-            origem=dados["origem_rei"],
-            destino=dados["origem_torre"],
-            matriz=self.state.board.matriz
-        ):
-            return False
-
-        for l, c in dados["casas_seguras"]:
-            if self._casa_atacada(l, c, cor):
-                return False
-
-        return True
 
 
     def executar_roque(self, cor: Cor, lado: str) -> None:
@@ -750,11 +661,15 @@ class Engine:
         )
 
         if isinstance(p, Rei):
-            self._adicionar_roques(self.state.turno, candidatos)
+            self.judge.adicionar_roques(
+                self.state.turno,
+                candidatos,
+                self.judge.verificar_xeque(self.state.turno)
+            )
         
         if isinstance(p, Peao):
             if p.posicao in self.state.posicao_peao_en_passant:
-                self._adicionar_en_passant(candidatos)
+                self.judge.adicionar_en_passant(candidatos)
         
         movimentos_validos = []
         for destino, tipo in candidatos:
@@ -765,41 +680,6 @@ class Engine:
 
         # if DEBUG:
         #     print(self.movimentos_possiveis)
-
-
-    def _adicionar_en_passant(self, mov: list) -> None:
-        """
-        Adiciona as casas de en passant na lista de movimentos possíveis.
-
-        Args:
-            mov (list): Lista de movimentos.
-
-        Returns:
-            list: Lista de movimentos com os movimentos de en passant adicionados.
-        """
-        mov.append(self.state.en_passant)
-
-
-    def _adicionar_roques(
-        self,
-        cor: str,
-        mov: list
-    ) -> list[tuple[int, int], TipoMov]:
-        if self.verificar_roque(cor, "curto"):
-            destino = (
-                self.ROQUES[(cor, "curto")]["destino_rei"]
-            )
-
-            mov.append((destino, TipoMov.ROQUE_CURTO))
-
-        if self.verificar_roque(cor, "longo"):
-            destino = (
-                self.ROQUES[(cor, "longo")]["destino_rei"]
-            )
-
-            mov.append((destino, TipoMov.ROQUE_LONGO))
-
-        return mov
 
 
     def limpar_movimentos(self) -> None:

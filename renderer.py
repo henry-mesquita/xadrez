@@ -323,10 +323,10 @@ class Renderer:
         """
         Destaca a casa onde o rei estiver em xeque.
         """
-        if self.engine.judge.verificar_xeque(Cor.BRANCO, self.engine.state):
+        if self.engine.judge.verificar_xeque(Cor.BRANCO):
             self._desenhar_xeque_branco(surface=self.tela)
 
-        if self.engine.judge.verificar_xeque(Cor.PRETO, self.engine.state):
+        if self.engine.judge.verificar_xeque(Cor.PRETO):
             self._desenhar_xeque_preto(surface=self.tela)
 
 
