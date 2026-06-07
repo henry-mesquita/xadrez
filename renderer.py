@@ -323,10 +323,10 @@ class Renderer:
         """
         Destaca a casa onde o rei estiver em xeque.
         """
-        if self.engine.verificar_xeque(Cor.BRANCO):
+        if self.engine.judge.verificar_xeque(Cor.BRANCO, self.engine.state):
             self._desenhar_xeque_branco(surface=self.tela)
 
-        if self.engine.verificar_xeque(Cor.PRETO):
+        if self.engine.judge.verificar_xeque(Cor.PRETO, self.engine.state):
             self._desenhar_xeque_preto(surface=self.tela)
 
 
@@ -337,7 +337,7 @@ class Renderer:
         Args:
             surface (Surface): Surface da tela.
         """
-        pos = self.engine.achar_lc_rei(Cor.PRETO)
+        pos = self.engine.state.board.achar_lc_rei(cor=Cor.PRETO)
         if pos:
             l_vis, c_vis = self.transformar_coords(pos[0], pos[1])
             x = c_vis * TAM_CASA + TAB_POS[0]
@@ -356,7 +356,7 @@ class Renderer:
         Args:
             surface (Surface): Surface da tela.
         """
-        pos = self.engine.achar_lc_rei(Cor.BRANCO)
+        pos = self.engine.state.board.achar_lc_rei(Cor.BRANCO)
         if pos:
             l_vis, c_vis = self.transformar_coords(pos[0], pos[1])
             x = c_vis * TAM_CASA + TAB_POS[0]
