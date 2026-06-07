@@ -8,7 +8,6 @@ from pecas.rei import Rei
 from pecas.torre import Torre
 from .move import *
 from .judge import Judge
-from .generator import Generator
 from .fen_parser import *
 from .state import GameState
 from .factory import criar_peca
@@ -66,8 +65,7 @@ class Engine:
         Inicializa a engine com o tabuleiro vazio e carrega a posição inicial.
         """
         self.state: GameState       = GameState()
-        self.generator: Generator   = Generator(self.state.board)
-        self.judge: Judge           = Judge(self.generator)
+        self.judge: Judge           = Judge(self.state.board)
 
         self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
         self.pseudo_movimentos:     list[tuple[tuple[int, int], TipoMov]]   = []
@@ -453,7 +451,7 @@ class Engine:
                 p = self.state.board.matriz[li, co]
                 if p is not None and p.cor == cor:
                     pseudo = p.gerar_pseudo_movimentos(lc=(li, co))
-                    candidatos = self.generator.classificar_movimentos(p, (li, co), pseudo)
+                    candidatos = self.judge.classificar_movimentos(p, (li, co), pseudo)
                     
                     if isinstance(p, Rei):
                         self._adicionar_roques(cor, candidatos)
@@ -512,7 +510,7 @@ class Engine:
         if self._tem_movimentos_legais(cor_atual):
             return False
 
-        if self.verificar_xeque(cor_atual):
+        if self.judge.verificar_xeque(cor_atual, self.state):
             if cor_atual == Cor.BRANCO:
                 self.state.vitoria_negras = True
                 cor_vencedora = "Pretas"
@@ -675,7 +673,7 @@ class Engine:
         if self.judge.verificar_xeque(cor=cor, state=self.state):
             return False
 
-        if not self.generator.caminho_livre(
+        if not self.judge.caminho_livre(
             origem=dados["origem_rei"],
             destino=dados["origem_torre"],
             matriz=self.state.board.matriz
@@ -743,7 +741,7 @@ class Engine:
 
         self.pseudo_movimentos = p.gerar_pseudo_movimentos(lc=origem)
         
-        candidatos = self.generator.classificar_movimentos(
+        candidatos = self.judge.classificar_movimentos(
             peca=p,
             origem=origem,
             movimentos=self.pseudo_movimentos
