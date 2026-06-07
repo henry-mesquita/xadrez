@@ -305,7 +305,7 @@ class Engine:
         self.state.en_passant = estado.en_passant
         self.state.posicao_peao_en_passant = estado.posicao_peao_en_passant
         self.state.posicao_alvo_en_passant = estado.posicao_alvo_en_passant
-        self.halfmove_clock = estado.halfmove_clock
+        self.state.halfmove_clock = estado.halfmove_clock
         self.ultimo_mov = estado.ultimo_mov
         self.aguardando_promocao = False
 
@@ -537,7 +537,7 @@ class Engine:
         Returns:
             bool: True se houver empate.
         """
-        if self.halfmove_clock >= 100:
+        if self.state.halfmove_clock >= 100:
             self.state.empate = True
             print("Empate pela regra dos 50 lances.")
             return True
@@ -645,7 +645,10 @@ class Engine:
         Returns:
             bool: True se a casa estiver sob ataque, False caso contrário.
         """
-        pos_original = self.achar_lc_rei(cor_rei)
+        pos_original = self.state.board.achar_lc_rei(
+            cor=cor_rei,
+            matriz=self.state.board.matriz
+        )
         self.executar_movimento(Movimento(
             origem=pos_original,
             destino=(l, c)),
@@ -729,42 +732,6 @@ class Engine:
             self.state.turno = Cor.BRANCO
 
 
-    def achar_lc_peca(self, peca: Peca) -> tuple[int, int] | None:
-        """
-        Encontra a linha e coluna de uma instância de peça na matriz.
-
-        Args:
-            peca (Peca): Instância da peça a ser localizada.
-
-        Returns:
-            tuple[int, int] | None: (linha, coluna) ou None se não encontrada.
-        """
-        for li in range(8):
-            for co in range(8):
-                if self.state.board.matriz[li, co] == peca:
-                    return (li, co)
-        return None
-
-
-    def achar_lc_rei(self, cor: Cor) -> tuple[int, int] | None:
-        """
-        Encontra a linha e coluna de uma instância de peça na matriz.
-
-        Args:
-            peca (Peca): Instância da peça a ser localizada.
-
-        Returns:
-            tuple[int, int] | None: (linha, coluna) ou None se não encontrada.
-        """
-        for li in range(8):
-            for co in range(8):
-                p = self.state.board.matriz[li, co]
-                if isinstance(p, Rei):
-                    if p.cor == cor:
-                        return (li, co)
-        return None 
-
-
     def gerar_mov_peca(self, p: Peca) -> None:
         """
         Gera os movimentos possíveis de uma peça.
@@ -772,7 +739,10 @@ class Engine:
         Args:
             p (Peca): Instância da peça a ser movimentada.
         """
-        origem = self.achar_lc_peca(peca=p)
+        origem = self.state.board.achar_lc_peca(
+            peca=p,
+            matriz=self.state.board.matriz
+        )
         if origem is None:
             self.movimentos_possiveis = []
             self.pseudo_movimentos = []
@@ -992,7 +962,10 @@ class Engine:
         if cor not in (Cor.PRETO, Cor.BRANCO):
             raise ValueError('Cor precisa ser "w" ou "b"')
         
-        lc_rei = self.achar_lc_rei(cor=cor)
+        lc_rei = self.state.board.achar_lc_rei(
+            cor=cor,
+            matriz=self.state.board.matriz
+        )
         if lc_rei is None:
             return False
 
