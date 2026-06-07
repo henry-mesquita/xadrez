@@ -490,7 +490,9 @@ class Engine:
 
     @property
     def finalizado(self) -> bool:
-        """Retorna True se o jogo acabou (Vitória ou Empate)."""
+        """
+        Retorna True se o jogo acabou (Vitória ou Empate).
+        """
         return self.state.vitoria_brancas or self.state.vitoria_negras or self.state.empate
 
 
