@@ -43,14 +43,3 @@ class Board:
                     if p.cor == cor:
                         return (l, c)
         return None 
-
-
-    @staticmethod
-    def lc_valido(l: int, c: int) -> bool:
-        """
-        Verifica se a coordenada informada está dentro dos limites do tabuleiro.
-
-        Returns:
-            bool: True se válida, False caso contrário.
-        """
-        return 0 <= l < 8 and 0 <= c < 8 

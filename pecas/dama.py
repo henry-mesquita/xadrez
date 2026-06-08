@@ -44,7 +44,7 @@ class Dama(Peca):
                 l += direcao[0]
                 c += direcao[1]
 
-                if not self.lc_valido(l, c):
+                if not lc_valido(l, c):
                     break
                 mov.append((l, c))
 
@@ -57,7 +57,7 @@ class Dama(Peca):
                 l += direcao[0]
                 c += direcao[1]
 
-                if not self.lc_valido(l, c):
+                if not lc_valido(l, c):
                     break
                 mov.append((l, c))
 

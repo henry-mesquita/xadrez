@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 
+# localização interna da peça (mutável, lista)
+type Coord = list[int]
+
 
 @dataclass(frozen=True)
 class Cor:
@@ -16,23 +19,22 @@ class Peca:
     """
     def __init__(
         self,
-        cor: str,
-        posicao: list[int, int]
+        cor: Cor,
+        posicao: Coord
     ) -> None:
         """
         Inicializa uma peça.
 
         Args:
-            cor (str): Cor da peça ('w' para branco ou 'b' para preto).
-            tipo (str): Tipo da peça ('p' para peão, 'r' para torre, 'n' para cavalo, 'b' para bispo, 'q' para dama, 'k' para rei).
-            TAMANHO_PECA (int): Tamanho da peça.
+            cor (Cor): Cor da peça ('w' para branco ou 'b' para preto).
             posicao (list[int, int]): Posição da peça.
         """
         if cor.lower() not in (Cor.BRANCO, Cor.PRETO):
             raise ValueError("Cor tem que estar em: ('b', 'w')")
-        
-        self.cor: Cor                   = cor.lower()
-        self.posicao: list[int, int]    = posicao # Posição logica da peca (lc)
+
+        self.cor: Cor       = cor.lower()
+        # Posição visual da peça (sincronizado com a posição lógica)
+        self.posicao: Coord = posicao
 
 
     def __str__(self) -> str:
@@ -54,14 +56,3 @@ class Peca:
         cor = self.cor
         pos = self.posicao
         return f"Tipo: {tipo} | Cor: {cor} | Posição: {pos})"
-
-
-    @staticmethod
-    def lc_valido(linha: int, coluna: int) -> bool:
-        """
-        Verifica se a linha e coluna são válidas.
-
-        Returns:
-            bool: True se a linha e coluna forem validas, False caso contrário.
-        """
-        return 0 <= linha < 8 and 0 <= coluna < 8

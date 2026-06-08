@@ -5,6 +5,10 @@ from typing import TypedDict, Literal
 from pecas.peca import Cor
 
 
+def lc_valido(l: int, c: int) -> bool:
+    return 0 <= l < 8 and 0 <= c < 8
+
+
 class TipoPeca(Enum):
     PEAO    = 'p'
     TORRE   = 'r'

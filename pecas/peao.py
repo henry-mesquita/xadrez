@@ -64,12 +64,12 @@ class Peao(Peca):
         
         for offset in offsets_peao:
             casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
-            if self.lc_valido(casa_destino[0], casa_destino[1]):
+            if lc_valido(casa_destino[0], casa_destino[1]):
                 mov.append(casa_destino)
         
         for offset_captura in offsets_captura_peao:
             casa_destino = (lc[0] + offset_captura[0], lc[1] + offset_captura[1])
-            if self.lc_valido(casa_destino[0], casa_destino[1]):
+            if lc_valido(casa_destino[0], casa_destino[1]):
                 mov.append(casa_destino)
 
         return mov

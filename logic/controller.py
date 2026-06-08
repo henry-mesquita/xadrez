@@ -154,7 +154,7 @@ class Controller:
                 self.state.posicao_alvo_en_passant = mov.destino
                 for dc in (-1, 1):
                     c_viz = coluna + dc
-                    if self.state.board.lc_valido(linha, c_viz):
+                    if lc_valido(linha, c_viz):
                         v = self.state.board.matriz[linha, c_viz]
                         if isinstance(v, Peao):
                             if v.cor != p.cor:
