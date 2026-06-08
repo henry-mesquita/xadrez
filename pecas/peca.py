@@ -31,7 +31,7 @@ class Peca:
         if cor.lower() not in (Cor.BRANCO, Cor.PRETO):
             raise ValueError("Cor tem que estar em: ('b', 'w')")
         
-        self.cor: str                   = cor.lower()
+        self.cor: Cor                   = cor.lower()
         self.posicao: list[int, int]    = posicao # Posição logica da peca (lc)
 
 

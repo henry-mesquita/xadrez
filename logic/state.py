@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from pecas.peca import Cor
 from .board import Board
+from .move import *
+
 
 @dataclass
 class GameState:
@@ -13,19 +15,19 @@ class GameState:
     # Direitos de roque
     roque_curto_branco: bool = True
     roque_longo_branco: bool = True
-    roque_curto_preto: bool = True
-    roque_longo_preto: bool = True
+    roque_curto_preto:  bool = True
+    roque_longo_preto:  bool = True
     
     # En Passant
-    en_passant: list = None 
-    posicao_peao_en_passant: list = field(default_factory=list)
-    posicao_alvo_en_passant: tuple = None
+    en_passant: InfoEnPassant | None    = None 
+    posicao_peao_en_passant: list[Pos]  = field(default_factory=list)
+    posicao_alvo_en_passant: Pos | None = None
     
     # Clocks
-    halfmove_clock: int = 0
-    fullmove_number: int = 1
+    halfmove_clock:     int = 0
+    fullmove_number:    int = 1
     
     # Status
-    vitoria_negras: bool = False
-    vitoria_brancas: bool = False
-    empate: bool = False
+    vitoria_negras:     bool = False
+    vitoria_brancas:    bool = False
+    empate:             bool = False

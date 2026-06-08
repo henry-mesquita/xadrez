@@ -404,7 +404,7 @@ class Judge:
             while True:
                 l += direcao[0]
                 c += direcao[1]
-                if not self.state.board.lc_valido(linha=l, coluna=c):
+                if not self.state.board.lc_valido(l=l, c=c):
                     break
                 destino = self.state.board.matriz[l, c]
                 if destino is None:
@@ -442,7 +442,8 @@ class Judge:
             while True:
                 l += direcao[0]
                 c += direcao[1]
-                if not self.state.board.lc_valido(linha=l, coluna=c): break
+                if not self.state.board.lc_valido(l=l, c=c):
+                    break
                 destino = self.state.board.matriz[l, c]
                 if destino is None: continue
                 if destino.cor != cor_defendendo and isinstance(destino, (Bispo, Dama)):
@@ -478,7 +479,7 @@ class Judge:
         )
         for offset in offsets_cavalo:
             l, c = pos[0] + offset[0], pos[1] + offset[1]
-            if self.state.board.lc_valido(linha=l, coluna=c):
+            if self.state.board.lc_valido(l=l, c=c):
                 destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Cavalo) and destino.cor != cor_defendendo:
                     return True
@@ -512,7 +513,7 @@ class Judge:
         )
         for offset in offsets_rei:
             l, c = pos[0] + offset[0], pos[1] + offset[1]
-            if self.state.board.lc_valido(linha=l, coluna=c):
+            if self.state.board.lc_valido(l=l, c=c):
                 destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Rei) and destino.cor != cor_defendendo:
                     return True
@@ -542,7 +543,7 @@ class Judge:
 
         for offset in offsets_peao:
             l, c = pos[0] + offset[0], pos[1] + offset[1]
-            if self.state.board.lc_valido(linha=l, coluna=c):
+            if self.state.board.lc_valido(l=l, c=c):
                 destino = self.state.board.matriz[l, c]
                 if destino and isinstance(destino, Peao) and destino.cor != cor_defendendo:
                     return True

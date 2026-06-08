@@ -12,7 +12,7 @@ class Cavalo(Peca):
     def __init__(
         self,
         cor: str,
-        posicao: tuple[int, int]
+        posicao: Pos
     ) -> None:
         super().__init__(cor, posicao)
         self.tipo: TipoPeca = TipoPeca.CAVALO
