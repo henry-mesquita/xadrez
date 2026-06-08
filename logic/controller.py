@@ -22,10 +22,10 @@ class Controller:
         """
         Inicializa o controller com o tabuleiro vazio e carrega a posição inicial.
         """
-        self.state: GameState       = GameState()
-        self.judge: Judge           = Judge(self.state)
+        self.state: GameState   = GameState()
+        self.judge: Judge       = Judge(self.state)
 
-        self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
+        self.movimentos_possiveis: JogadasPossiveis = []
 
         carregar_posicao_fen(
             state=self.state,
@@ -33,8 +33,8 @@ class Controller:
             board=self.state.board
         )
 
-        self.casa_promocao: tuple[int, int] | None = None
-        self.aguardando_promocao = False
+        self.casa_promocao: Pos | None = None
+        self.aguardando_promocao: bool = False
         self.ultimo_mov: Movimento | None = None
 
         self.historico: list[EstadoHistorico] = []
@@ -65,9 +65,12 @@ class Controller:
         Executa um movimento.
 
         Args:
-            mov (Movimento): Objeto contendo as coordenadas de origem e destino.
-            interno (bool): True se o movimento foi executado internamente, False caso contrário.
-            promocao_alvo (TipoPeca): Tipo da peça para promoção automática em testes.
+            mov (Movimento):
+                Objeto contendo as coordenadas de origem e destino.
+            interno (bool):
+                True se o movimento foi executado internamente, False caso contrário.
+            promocao_alvo (TipoPeca | None):
+                Tipo da peça para promoção automática em testes.
 
         Returns:
             bool: True se o movimento foi executado, False caso contrário.
@@ -146,8 +149,8 @@ class Controller:
                     direcao = 1
                 else:
                     direcao = -1
-                
-                self.state.en_passant = [(linha + direcao, coluna), TipoMov.CAPTURA]
+
+                self.state.en_passant = ((linha + direcao, coluna), TipoMov.CAPTURA)
                 self.state.posicao_alvo_en_passant = mov.destino
                 for dc in (-1, 1):
                     c_viz = coluna + dc
@@ -249,18 +252,17 @@ class Controller:
 
     def _testar_movimento(
         self,
-        mov_destino: tuple[int, int],
-        origem: tuple[int, int],
-        cor: str
+        mov_destino: Pos,
+        origem: Pos,
+        cor: Cor
     ) -> bool:
         """
         Verifica se um movimento dado eh valido.
 
         Args:
-            mov_destino (tuple[int, int]): Coordenadas de destino.
-            tipo (TipoMov): Tipo de movimento.
-            origem (tuple[int, int]): Coordenadas de origem.
-            cor (str): Cor do jogador.
+            mov_destino (Pos): Coordenadas de destino.
+            origem (Pos): Coordenadas de origem.
+            cor (Cor): Cor do jogador.
 
         Returns:
             bool: True se o movimento for valido, False caso contrário.
@@ -272,24 +274,24 @@ class Controller:
         return not em_xeque
 
 
-    def _tem_movimentos_legais(self, cor: str) -> bool:
+    def _tem_movimentos_legais(self, cor: Cor) -> bool:
         """
         Verifica se o jogador da cor atual possui pelo menos um movimento legal.
 
         Args:
-            cor (str): Cor do jogador.
+            cor (Cor): Cor do jogador.
 
         Returns:
             bool: True se o jogador possui pelo menos um movimento legal.
         """
-        for li in range(8):
-            for co in range(8):
-                p = self.state.board.matriz[li, co]
+        for l in range(8):
+            for c in range(8):
+                p = self.state.board.matriz[l, c]
                 if p is not None and p.cor == cor:
-                    candidatos = self.judge.buscar_candidatos(p, (li, co))
+                    candidatos = self.judge.buscar_candidatos(p, (l, c))
                     
                     for destino, _ in candidatos:
-                        if self._testar_movimento(destino, (li, co), cor):
+                        if self._testar_movimento(destino, (l, c), cor):
                             return True
         return False
 
@@ -318,20 +320,31 @@ class Controller:
             cor (Cor): Cor do jogador.
             distancia_c (int): Diferença de colunas entre a torre e o rei.
         """
-        l = 7 if cor == Cor.BRANCO else 0
+        if cor == Cor.BRANCO:
+            l = 7
+        else:
+            l = 0
+
         if distancia_c > 0: # Curto
             torre = self.state.board.matriz[l, 7]
             self.state.board.matriz[l, 5] = torre
             self.state.board.matriz[l, 7] = None
-            if torre: torre.posicao = (l, 5)
+            if torre:
+                torre.posicao = (l, 5)
         else: # Longo
             torre = self.state.board.matriz[l, 0]
             self.state.board.matriz[l, 3] = torre
             self.state.board.matriz[l, 0] = None
-            if torre: torre.posicao = (l, 3)
+            if torre:
+                torre.posicao = (l, 3)
 
 
-    def _finalizar_turno(self, captura: bool, peao: bool, interno: bool) -> None:
+    def _finalizar_turno(
+        self,
+        captura: bool,
+        peao: bool,
+        interno: bool
+    ) -> None:
         """
         Método auxiliar para concluir a lógica de fim de turno.
 
@@ -367,7 +380,11 @@ class Controller:
         l, c = self.casa_promocao
         peao = self.state.board.matriz[l, c]
 
-        self.state.board.matriz[l, c] = criar_peca(tipo=novo_tipo, cor=peao.cor, pos=[l, c])
+        self.state.board.matriz[l, c] = criar_peca(
+            tipo=novo_tipo,
+            cor=peao.cor,
+            pos=[l, c]
+        )
         self.casa_promocao = None
         self.aguardando_promocao = False
 
@@ -379,7 +396,11 @@ class Controller:
         """
         Retorna True se o jogo acabou (Vitória ou Empate).
         """
-        return self.state.vitoria_brancas or self.state.vitoria_negras or self.state.empate
+        return any((
+            self.state.vitoria_brancas,
+            self.state.vitoria_negras,
+            self.state.empate
+        ))
 
 
     def verificar_e_aplicar_roque(
@@ -441,7 +462,7 @@ class Controller:
 
     def mudar_turno(self) -> None:
         """
-        Alterna o turno atual entre branco ('w') e preto ('b').
+        Alterna o turno atual entre Cor.BRANCO ('w') e Cor.PRETO ('b').
         """
         if self.state.turno == Cor.BRANCO:
             self.state.turno = Cor.PRETO
@@ -466,6 +487,7 @@ class Controller:
         movimentos_validos = []
         for destino, tipo in candidatos:
             if self._testar_movimento(destino, origem, self.state.turno):
+                # Adiciona apenas se o movimento não deixar o proprio rei em xeque
                 movimentos_validos.append((destino, tipo))
         
         self.movimentos_possiveis = movimentos_validos
@@ -473,6 +495,6 @@ class Controller:
 
     def limpar_movimentos(self) -> None:
         """
-        Limpa os movimentos pseudo-legais e movimentos possíveis.
+        Limpa os movimentos movimentos possíveis.
         """
         self.movimentos_possiveis.clear()

@@ -3,6 +3,40 @@ from enum import Enum, auto
 from pecas.peca import Peca
 
 
+class TipoMov(Enum):
+    NORMAL          = auto()
+    CAPTURA         = auto()
+    ROQUE_CURTO     = auto()
+    ROQUE_LONGO     = auto()
+    EN_PASSANT      = auto()
+
+
+# linha e coluna
+type Pos                = tuple[int, int]
+# você pode ir para a casa X e isso é um movimento Y
+type Candidato          = tuple[Pos, TipoMov]
+# conjunto completo de opções que uma peça tem num turno
+type JogadasPossiveis   = list[Candidato]
+# informação que guarda en passant
+type InfoEnPassant      = tuple
+
+
+@dataclass
+class Movimento:
+    """
+    Representa um movimento de peça.
+    
+    Attributes:
+        origem (tuple[int, int]): Casa inicial.
+        destino (tuple[int, int]): Casa final.
+
+        Formato: (linha, coluna), (x, y)
+    """
+    origem:     Pos
+    destino:    Pos
+
+
+
 @dataclass
 class EstadoHistorico:
     """
@@ -22,26 +56,3 @@ class EstadoHistorico:
     halfmove_clock: int
     ultimo_mov: Movimento | None
     foi_promocao: bool
-
-
-@dataclass
-class Movimento:
-    """
-    Representa um movimento de peça.
-    
-    Attributes:
-        origem (tuple[int, int]): Casa inicial.
-        destino (tuple[int, int]): Casa final.
-
-        Formato: (linha, coluna), (x, y)
-    """
-    origem:     tuple[int, int]
-    destino:    tuple[int, int]
-
-
-class TipoMov(Enum):
-    NORMAL          = auto()
-    CAPTURA         = auto()
-    ROQUE_CURTO     = auto()
-    ROQUE_LONGO     = auto()
-    EN_PASSANT      = auto()
