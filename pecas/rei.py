@@ -15,7 +15,7 @@ class Rei(Peca):
     ) -> None:
         super().__init__(cor, posicao)
         self.tipo: TipoPeca     = TipoPeca.REI
-        self.pontuacao: float   = float('inf')
+        self.pontuacao: float   = None
 
 
     def gerar_pseudo_movimentos(

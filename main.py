@@ -7,6 +7,8 @@ def main() -> None:
     jogo = Xadrez()
     jogo.run()
 
+    print(jogo.engine.judge._contagem_material())
+
 
 if __name__ == '__main__':
     main()

@@ -32,8 +32,8 @@ TAMANHO_PECA: int                       = TAM_CASA
 TAM_TABULEIRO: tuple[int, int]          = (TAM_CASA * 8, TAM_CASA * 8)
 TAB_POS: tuple[int, int]                = (0, 0)
 
+DESFAZER_MOVIMENTO: bool                = True
+
 FEN_INICIAL: str = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 ESTILO_PECAS = "mpchess"
-
-DESFAZER_MOVIMENTO: bool                = True
