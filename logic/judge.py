@@ -58,35 +58,6 @@ class Judge:
         self.state: GameState = state
 
 
-    def classificar_movimentos(
-        self,
-        peca: Peca,
-        origem: Pos,
-        movimentos: list[Pos]
-    ) -> JogadasPossiveis:
-        """
-        Classifica movimentos pseudo-legais como normais ou de captura.
-
-        Args:
-            peca (Peca): A peça que está se movendo.
-            origem (Pos): Casa de origem.
-            movimentos (list[Pos]): Lista de destinos pseudo-legais.
-
-        Returns:
-            JogadasPossiveis: Destinos validados com seu tipo.
-        """
-        movs: JogadasPossiveis = []
-        for casa in movimentos:
-            tipo = self._classificar_movimento(
-                peca=peca,
-                origem=origem,
-                destino_lc=casa
-            )
-            if tipo is not None:
-                movs.append((casa, tipo))
-        return movs
-
-
     def buscar_candidatos(
         self,
         peca: Peca,
@@ -116,6 +87,35 @@ class Judge:
                 self.adicionar_en_passant(candidatos)
                 
         return candidatos
+
+
+    def classificar_movimentos(
+        self,
+        peca: Peca,
+        origem: Pos,
+        movimentos: list[Pos]
+    ) -> JogadasPossiveis:
+        """
+        Classifica movimentos pseudo-legais como normais ou de captura.
+
+        Args:
+            peca (Peca): A peça que está se movendo.
+            origem (Pos): Casa de origem.
+            movimentos (list[Pos]): Lista de destinos pseudo-legais.
+
+        Returns:
+            JogadasPossiveis: Destinos validados com seu tipo.
+        """
+        movs: JogadasPossiveis = []
+        for casa in movimentos:
+            tipo = self._classificar_movimento(
+                peca=peca,
+                origem=origem,
+                destino_lc=casa
+            )
+            if tipo is not None:
+                movs.append((casa, tipo))
+        return movs
 
 
     def _classificar_movimento(
@@ -177,135 +177,6 @@ class Judge:
             return TipoMov.CAPTURA
 
         return TipoMov.NORMAL
-
-
-    def caminho_livre(
-        self,
-        origem: Pos,
-        destino: Pos
-    ) -> bool:
-        """
-        Verifica se há obstáculos entre duas casas para peças deslizantes.
-        Feito exclusivamente para ser usado no roque.
-
-        Args:
-            origem (Pos): Casa inicial.
-            destino (Pos): Casa final.
-
-        Returns:
-            bool: True se o caminho estiver vazio, False caso contrário.
-        """
-        delta = (
-            destino[0] - origem[0],
-            destino[1] - origem[1]
-        )
-        if delta[0] == 0:
-            passo_l = 0
-        else:
-            if delta[0] > 0:
-                passo_l = 1
-            else:
-                passo_l = -1
-
-        if delta[1] == 0:
-            passo_c = 0
-        else:
-            if delta[1] > 0:
-                passo_c = 1
-            else:
-                passo_c = -1
-
-        if passo_l == 0 and passo_c == 0:
-            return False
-
-        atual = (origem[0] + passo_l, origem[1] + passo_c)
-        while atual != destino:
-            if self.state.board.matriz[atual[0], atual[1]] is not None:
-                return False
-            atual = (atual[0] + passo_l, atual[1] + passo_c)
-        return True
-
-
-    def adicionar_en_passant(self, mov: JogadasPossiveis) -> None:
-        """
-        Adiciona as casas de en passant na lista de movimentos possíveis.
-
-        Args:
-            mov (JogadasPossiveis): Lista de movimentos possíveis.  
-        """
-        mov.append(self.state.en_passant)
-    
-
-    def adicionar_roques(
-        self,
-        cor: Cor,
-        mov: JogadasPossiveis,
-        xeque: bool
-    ) -> JogadasPossiveis:
-        """
-        Adiciona os roques na lista de movimentos possíveis.
-
-        Args:
-            cor (Cor): Cor do rei.
-            mov (JogadasPossiveis): Lista de movimentos possíveis.
-
-        Returns:
-            JogadasPossiveis: Lista de movimentos possíveis.
-        """
-        if self.verificar_roque(cor, "curto", xeque):
-            destino = (
-                self.ROQUES[(cor, "curto")]["destino_rei"]
-            )
-
-            mov.append((destino, TipoMov.ROQUE_CURTO))
-
-        if self.verificar_roque(cor, "longo", xeque):
-            destino = (
-                self.ROQUES[(cor, "longo")]["destino_rei"]
-            )
-
-            mov.append((destino, TipoMov.ROQUE_LONGO))
-
-        return mov
-
-
-    def verificar_roque(
-        self,
-        cor: Cor,
-        lado: str,
-        xeque: bool
-    ) -> bool:
-        """
-        Retorna True se o roque pode ser realizado.
-
-        Args:
-            cor (Cor): Cor do rei.
-            lado (str): "curto" ou "longo".
-
-        Returns:
-            bool: True se o roque pode ser realizado, False caso contrário.
-        """
-        dados = self.ROQUES[(cor, lado)]
-
-        direito = getattr(self.state, dados["direito"])
-
-        if not direito:
-            return False
-
-        if xeque:
-            return False
-
-        if not self.caminho_livre(
-            origem=dados["origem_rei"],
-            destino=dados["origem_torre"]
-        ):
-            return False
-
-        for l, c in dados["casas_seguras"]:
-            if self.casa_atacada(l, c, cor):
-                return False
-
-        return True
 
 
     def casa_atacada(
@@ -550,6 +421,88 @@ class Judge:
         return False
 
 
+    def verificar_roque(
+        self,
+        cor: Cor,
+        lado: str,
+        xeque: bool
+    ) -> bool:
+        """
+        Retorna True se o roque pode ser realizado.
+
+        Args:
+            cor (Cor): Cor do rei.
+            lado (str): "curto" ou "longo".
+
+        Returns:
+            bool: True se o roque pode ser realizado, False caso contrário.
+        """
+        dados = self.ROQUES[(cor, lado)]
+
+        direito = getattr(self.state, dados["direito"])
+
+        if not direito:
+            return False
+
+        if xeque:
+            return False
+
+        if not self.caminho_livre(
+            origem=dados["origem_rei"],
+            destino=dados["origem_torre"]
+        ):
+            return False
+
+        for l, c in dados["casas_seguras"]:
+            if self.casa_atacada(l, c, cor):
+                return False
+
+        return True
+
+
+    def adicionar_roques(
+        self,
+        cor: Cor,
+        mov: JogadasPossiveis,
+        xeque: bool
+    ) -> JogadasPossiveis:
+        """
+        Adiciona os roques na lista de movimentos possíveis.
+
+        Args:
+            cor (Cor): Cor do rei.
+            mov (JogadasPossiveis): Lista de movimentos possíveis.
+
+        Returns:
+            JogadasPossiveis: Lista de movimentos possíveis.
+        """
+        if self.verificar_roque(cor, "curto", xeque):
+            destino = (
+                self.ROQUES[(cor, "curto")]["destino_rei"]
+            )
+
+            mov.append((destino, TipoMov.ROQUE_CURTO))
+
+        if self.verificar_roque(cor, "longo", xeque):
+            destino = (
+                self.ROQUES[(cor, "longo")]["destino_rei"]
+            )
+
+            mov.append((destino, TipoMov.ROQUE_LONGO))
+
+        return mov
+
+
+    def adicionar_en_passant(self, mov: JogadasPossiveis) -> None:
+        """
+        Adiciona as casas de en passant na lista de movimentos possíveis.
+
+        Args:
+            mov (JogadasPossiveis): Lista de movimentos possíveis.  
+        """
+        mov.append(self.state.en_passant)
+
+
     def verificar_fim_de_jogo(
         self,
         cor_atual: Cor,
@@ -656,7 +609,9 @@ class Judge:
         # Rei e Bispo vs Rei e Bispo (Bispos na mesma cor de casa)
         if all(tipo == Bispo for tipo, _ in pecas_brancas + pecas_pretas):
             cor_da_casa_referencia = (pecas_brancas + pecas_pretas)[0][1]
-            if all(cor_casa == cor_da_casa_referencia for _, cor_casa in pecas_brancas + pecas_pretas):
+            if all(
+                cor_casa == cor_da_casa_referencia for _, cor_casa in pecas_brancas + pecas_pretas
+            ):
                 return True
 
         return False
@@ -736,3 +691,50 @@ class Judge:
             Cor.BRANCO: brancas,
             Cor.PRETO: pretas
         }
+
+
+    def caminho_livre(
+        self,
+        origem: Pos,
+        destino: Pos
+    ) -> bool:
+        """
+        Verifica se há obstáculos entre duas casas para peças deslizantes.
+        Feito exclusivamente para ser usado no roque.
+
+        Args:
+            origem (Pos): Casa inicial.
+            destino (Pos): Casa final.
+
+        Returns:
+            bool: True se o caminho estiver vazio, False caso contrário.
+        """
+        delta = (
+            destino[0] - origem[0],
+            destino[1] - origem[1]
+        )
+        if delta[0] == 0:
+            passo_l = 0
+        else:
+            if delta[0] > 0:
+                passo_l = 1
+            else:
+                passo_l = -1
+
+        if delta[1] == 0:
+            passo_c = 0
+        else:
+            if delta[1] > 0:
+                passo_c = 1
+            else:
+                passo_c = -1
+
+        if passo_l == 0 and passo_c == 0:
+            return False
+
+        atual = (origem[0] + passo_l, origem[1] + passo_c)
+        while atual != destino:
+            if self.state.board.matriz[atual[0], atual[1]] is not None:
+                return False
+            atual = (atual[0] + passo_l, atual[1] + passo_c)
+        return True
