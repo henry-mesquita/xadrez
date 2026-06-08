@@ -26,13 +26,13 @@ class Peca:
         Inicializa uma peça.
 
         Args:
-            cor (Cor): Cor da peça ('w' para branco ou 'b' para preto).
+            cor (Cor): Cor da peça (Cor.BRANCO para branco ou Cor.PRETO para preto).
             posicao (Coord): Posição da peça.
         """
         if cor.lower() not in (Cor.BRANCO, Cor.PRETO):
-            raise ValueError("Cor tem que estar em: ('b', 'w')")
+            raise ValueError("Cor tem que estar em: (Cor.BRANCO, Cor.PRETO)")
 
-        self.cor: Cor       = cor.lower()
+        self.cor: Cor = cor.lower()
         # Posição visual da peça (sincronizado com a posição lógica)
         self.posicao: Coord = posicao
 
@@ -45,7 +45,6 @@ class Peca:
         cor = self.cor
         pos = self.posicao
         return f"Tipo: {tipo} | Cor: {cor} | Posição: {pos})"
-
     
 
     def __repr__(self) -> str:

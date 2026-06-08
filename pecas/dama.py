@@ -44,12 +44,11 @@ class Dama(Peca):
 
         direcoes = ((0, 1), (0, -1), (1, 0), (-1, 0)) # horizontais
 
-        for direcao in direcoes:
-            l = lc[0]
-            c = lc[1]
+        for dl, dc in direcoes:
+            l, c = lc
             while True:
-                l += direcao[0]
-                c += direcao[1]
+                l += dl
+                c += dc
 
                 if not lc_valido(l, c):
                     break
@@ -57,12 +56,11 @@ class Dama(Peca):
 
         direcoes = ((-1, -1), (-1, 1), (1, -1), (1, 1)) # diagonais
 
-        for direcao in direcoes:
-            l = lc[0]
-            c = lc[1]
+        for dl, dc in direcoes:
+            l, c = lc
             while True:
-                l += direcao[0]
-                c += direcao[1]
+                l += dl
+                c += dc
 
                 if not lc_valido(l, c):
                     break

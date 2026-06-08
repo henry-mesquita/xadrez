@@ -28,10 +28,10 @@ class Rei(Peca):
         Gera os movimentos pseudo legais para o rei (k).
 
         Args:
-            lc (tuple[int, int]): Linha e coluna da peça.
+            lc (Pos): Linha e coluna da peça.
 
         Returns:
-            list: Lista de movimentos possíveis.
+            list[Pos]: Lista de movimentos possíveis.
         """
         mov: list[Pos] = []
 

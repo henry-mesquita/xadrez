@@ -38,11 +38,11 @@ class Torre(Peca):
 
         direcoes = ((0, 1), (0, -1), (1, 0), (-1, 0))
 
-        for direcao in direcoes:
+        for dl, dc in direcoes:
             l, c = lc
             while True:
-                l += direcao[0]
-                c += direcao[1]
+                l += dl
+                c += dc
 
                 if not lc_valido(l, c):
                     break
