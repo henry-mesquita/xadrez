@@ -5,7 +5,6 @@ from pecas.dama import Dama
 from pecas.torre import Torre
 from pecas.cavalo import Cavalo
 from pecas.rei import Rei
-from .board import Board
 from .state import GameState
 from .move import TipoMov
 import numpy as np
@@ -81,6 +80,30 @@ class Judge:
             if tipo is not None:
                 movs.append((casa, tipo))
         return movs
+
+
+    def buscar_candidatos(
+            self,
+            peca: Peca,
+            origem: tuple[int, int]
+    ) -> list[tuple[tuple[int, int], TipoMov]]:
+        """
+        Retorna todos os movimentos possíveis (normais e especiais) 
+        sem checar se o rei fica em xeque.
+        """
+        pseudo = peca.gerar_pseudo_movimentos(lc=origem)
+        
+        candidatos = self.classificar_movimentos(peca, origem, pseudo)
+        
+        if isinstance(peca, Rei):
+            xeque_atual = self.verificar_xeque(peca.cor)
+            self.adicionar_roques(peca.cor, candidatos, xeque_atual)
+            
+        if isinstance(peca, Peao):
+            if peca.posicao in self.state.posicao_peao_en_passant:
+                self.adicionar_en_passant(candidatos)
+                
+        return candidatos
 
 
     def _classificar_movimento(
@@ -621,7 +644,7 @@ class Judge:
         if tem_movimentos_legais:
             return False
 
-        if self.verificar_xeque(cor_atual, self.state):
+        if self.verificar_xeque(cor_atual):
             if cor_atual == Cor.BRANCO:
                 self.state.vitoria_negras = True
                 cor_vencedora = "Pretas"

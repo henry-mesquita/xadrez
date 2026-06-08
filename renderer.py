@@ -3,7 +3,7 @@ import pygame as pg
 from pecas.peca import Cor, Peca
 from pygame import Vector2 as vetor, Surface
 from pathlib import Path
-from logic.engine import Engine, TipoMov
+from logic.controller import Controller, TipoMov
 
 
 class Renderer:
@@ -11,7 +11,7 @@ class Renderer:
     Gerenciador de renderização visual e apresentação gráfica.
 
     Abstrai toda a lógica de renderização do Pygame,
-    esincronizando posições visuais com o estado lógico da Engine.
+    esincronizando posições visuais com o estado lógico do Controller.
     Responsável por de sprites e input handling.
     """
     BASE_DIR = Path(__file__).resolve()
@@ -22,15 +22,15 @@ class Renderer:
         ESTILO_PECAS
     )
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(self, controller: Controller) -> None:
         """
         Inicializa o gerenciador visual do jogo.
 
         Args:
-            engine (Engine): Instância da engine lógica.
+            controller (Controller): Instância da controller lógica.
         """
-        # Engine
-        self.engine: Engine = engine
+        # Controller
+        self.controller: Controller = controller
 
         # Render
         self._inicializar_pg()
@@ -69,7 +69,7 @@ class Renderer:
         """
         Itera pela matriz e vincula as peças ao sprite do cache.
         """
-        for linha in self.engine.state.board.matriz:
+        for linha in self.controller.state.board.matriz:
             for peca in linha:
                 if peca is not None:
                     self.vincular_sprite_a_peca(peca=peca)
@@ -119,7 +119,7 @@ class Renderer:
         """
         Percorre e sincroniza todas as peças ao tabuleiro.
         """
-        for linha in self.engine.state.board.matriz:
+        for linha in self.controller.state.board.matriz:
             for peca in linha:
                 if peca is not None:
                     self.sincronizar_peca_ao_tabuleiro(peca=peca)
@@ -152,7 +152,7 @@ class Renderer:
             self.orientacao_tabuleiro = Cor.BRANCO
 
         # Força a sincronização de todas as peças
-        for linha in self.engine.state.board.matriz:
+        for linha in self.controller.state.board.matriz:
             for peca in linha:
                 if peca:
                     self.sincronizar_peca_ao_tabuleiro(peca)
@@ -204,7 +204,7 @@ class Renderer:
         self._desenhar_movimentos_possiveis(surface=self.tela)
         self._desenhar_pecas(surface=self.tela)
 
-        if self.engine.aguardando_promocao:
+        if self.controller.aguardando_promocao:
             self.desenhar_menu_promocao()
 
         if DEBUG:
@@ -218,8 +218,8 @@ class Renderer:
         Args:
             surface (Surface): Surface do tabuleiro.
         """
-        if self.engine.ultimo_mov is not None:
-            mov = self.engine.ultimo_mov
+        if self.controller.ultimo_mov is not None:
+            mov = self.controller.ultimo_mov
             casas_para_destacar = [mov.origem, mov.destino]
 
             for (l, c) in casas_para_destacar:
@@ -272,7 +272,7 @@ class Renderer:
         pecas = ['q', 'r', 'b', 'n']
         self.menu_promocao_rects.clear()
 
-        cor_val = self.engine.state.turno
+        cor_val = self.controller.state.turno
         if hasattr(cor_val, 'value'):
             cor_val = cor_val.value
 
@@ -323,10 +323,10 @@ class Renderer:
         """
         Destaca a casa onde o rei estiver em xeque.
         """
-        if self.engine.judge.verificar_xeque(Cor.BRANCO):
+        if self.controller.judge.verificar_xeque(Cor.BRANCO):
             self._desenhar_xeque_branco(surface=self.tela)
 
-        if self.engine.judge.verificar_xeque(Cor.PRETO):
+        if self.controller.judge.verificar_xeque(Cor.PRETO):
             self._desenhar_xeque_preto(surface=self.tela)
 
 
@@ -337,7 +337,7 @@ class Renderer:
         Args:
             surface (Surface): Surface da tela.
         """
-        pos = self.engine.state.board.achar_lc_rei(cor=Cor.PRETO)
+        pos = self.controller.state.board.achar_lc_rei(cor=Cor.PRETO)
         if pos:
             l_vis, c_vis = self.transformar_coords(pos[0], pos[1])
             x = c_vis * TAM_CASA + TAB_POS[0]
@@ -356,7 +356,7 @@ class Renderer:
         Args:
             surface (Surface): Surface da tela.
         """
-        pos = self.engine.state.board.achar_lc_rei(Cor.BRANCO)
+        pos = self.controller.state.board.achar_lc_rei(Cor.BRANCO)
         if pos:
             l_vis, c_vis = self.transformar_coords(pos[0], pos[1])
             x = c_vis * TAM_CASA + TAB_POS[0]
@@ -392,7 +392,7 @@ class Renderer:
         """
         for l in range(8):
             for c in range(8):
-                peca = self.engine.state.board.matriz[l, c]
+                peca = self.controller.state.board.matriz[l, c]
                 if peca is None or peca == self.peca_arrastada:
                     continue
 
@@ -419,7 +419,7 @@ class Renderer:
         Args:
             surface (Surface): Superficie a ser desenhada.
         """
-        if self.engine.state.turno == Cor.BRANCO:
+        if self.controller.state.turno == Cor.BRANCO:
             turno = 'Brancas'
         else:
             turno = 'Pretas'
@@ -464,7 +464,7 @@ class Renderer:
         """
         Desenha indicadores visuais para movimentos normais e capturas.
         """
-        for (l, c), tipo in self.engine.movimentos_possiveis:
+        for (l, c), tipo in self.controller.movimentos_possiveis:
             l_vis, c_vis = self.transformar_coords(l, c)
             x, y = (
                 c_vis * TAM_CASA + TAB_POS[0],
@@ -537,7 +537,7 @@ class Renderer:
         for l in indices:
             linha_str = f"{l} |"
             for c in indices:
-                peca = self.engine.state.board.matriz[l, c]
+                peca = self.controller.state.board.matriz[l, c]
 
                 if peca is None:
                     if (l + c) % 2 == 0:
@@ -559,7 +559,7 @@ class Renderer:
             orientacao_txt = "BRANCAS"
         else:
             orientacao_txt = "PRETAS"
-        if self.engine.state.turno == Cor.BRANCO:
+        if self.controller.state.turno == Cor.BRANCO:
             turno_txt = "BRANCAS"
         else:
             turno_txt = "PRETAS"

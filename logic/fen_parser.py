@@ -15,7 +15,7 @@ def carregar_posicao_fen(
     Carrega uma posição de um FEN.
 
     Args:
-        state (GameState): Estado da engine.
+        state (GameState): Estado do controller.
         fen (str): FEN da posição.
     """
     partes = fen.strip().split()

@@ -2,6 +2,7 @@ import numpy as np
 from pecas.peca import Cor, Peca
 from pecas.rei import Rei
 
+
 class Board:
     def __init__(self):
         self.matriz = np.zeros((8, 8), dtype=object)
