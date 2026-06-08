@@ -27,7 +27,7 @@ class Peca:
 
         Args:
             cor (Cor): Cor da peça ('w' para branco ou 'b' para preto).
-            posicao (list[int, int]): Posição da peça.
+            posicao (Coord): Posição da peça.
         """
         if cor.lower() not in (Cor.BRANCO, Cor.PRETO):
             raise ValueError("Cor tem que estar em: ('b', 'w')")

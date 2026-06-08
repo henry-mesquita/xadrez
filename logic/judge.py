@@ -710,7 +710,7 @@ class Judge:
         return True
 
 
-    def _contagem_material(self) -> dict:
+    def contagem_material(self) -> dict:
         """
         Conta a quantidade de peças de cada cor.
 
@@ -725,13 +725,13 @@ class Judge:
                 if p is None:
                     continue
 
-                if p.pontuacao is None:
+                if p.valor is None:
                     continue
 
                 if p.cor == Cor.BRANCO:
-                    brancas += p.pontuacao
+                    brancas += p.valor
                 else:
-                    pretas += p.pontuacao
+                    pretas += p.valor
         return {
             Cor.BRANCO: brancas,
             Cor.PRETO: pretas

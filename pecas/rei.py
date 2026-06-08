@@ -1,5 +1,5 @@
 from constantes import *
-from pecas.peca import Peca
+from pecas.peca import Peca, Coord
 from logic.move import *
 
 
@@ -11,12 +11,13 @@ class Rei(Peca):
     """
     def __init__(
         self,
-        cor: str,
-        posicao: list[int, int]
+        cor: Cor,
+        posicao: Coord,
+        valor: float
     ) -> None:
         super().__init__(cor, posicao)
-        self.tipo: TipoPeca     = TipoPeca.REI
-        self.pontuacao: float   = None
+        self.tipo: TipoPeca = TipoPeca.REI
+        self.valor: float = valor
 
 
     def gerar_pseudo_movimentos(
