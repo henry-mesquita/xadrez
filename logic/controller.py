@@ -26,7 +26,6 @@ class Controller:
         self.judge: Judge           = Judge(self.state)
 
         self.movimentos_possiveis:  list[tuple[tuple[int, int], TipoMov]]   = []
-        self.pseudo_movimentos:     list[tuple[tuple[int, int], TipoMov]]   = []
 
         carregar_posicao_fen(
             state=self.state,
@@ -475,20 +474,5 @@ class Controller:
     def limpar_movimentos(self) -> None:
         """
         Limpa os movimentos pseudo-legais e movimentos possíveis.
-        """
-        self.limpar_pseudo_movimentos()
-        self.limpar_movimentos_possiveis()
-    
-
-    def limpar_pseudo_movimentos(self) -> None:
-        """
-        Limpa APENAS os movimentos pseudo-legais.
-        """
-        self.pseudo_movimentos.clear()
-    
-    
-    def limpar_movimentos_possiveis(self) -> None:
-        """
-        Limpa APENAS os movimentos possíveis.
         """
         self.movimentos_possiveis.clear()
