@@ -1,6 +1,7 @@
 from constantes import *
+from pecas.peca import *
+from logic.move import *
 import pygame as pg
-from pecas.peca import Cor, Peca
 from pygame import Vector2 as vetor, Surface
 from pathlib import Path
 from logic.controller import Controller, TipoMov
@@ -42,7 +43,7 @@ class Renderer:
         self.orientacao_tabuleiro: Cor = Cor.BRANCO
         self.inicializar_sprites_tabuleiro()
 
-        self.menu_promocao_rects = {}
+        self.menu_promocao_rects: dict[str, pg.Rect | None] = {}
 
 
     def _inicializar_pg(self) -> None:
@@ -158,12 +159,12 @@ class Renderer:
                     self.sincronizar_peca_ao_tabuleiro(peca)
 
 
-    def obter_lc_pelo_mouse(self) -> tuple[int, int]:
+    def obter_lc_pelo_mouse(self) -> Pos:
         """
         Converte as coordenadas X, Y do mouse em índices L, C da matriz.
 
         Returns:
-            tuple[int, int]: (linha, coluna).
+            Pos: (linha, coluna).
         """
         mx, my = pg.mouse.get_pos()
 
@@ -173,7 +174,7 @@ class Renderer:
         return self.transformar_coords(l_visual, c_visual)
 
 
-    def transformar_coords(self, l: int, c: int) -> tuple[int, int]:
+    def transformar_coords(self, l: int, c: int) -> Pos:
         """
         Inverte as coordenadas se a orientação for pretas.
 
@@ -182,7 +183,7 @@ class Renderer:
             c (int): Coluna.
 
         Returns:
-            tuple[int, int]: (linha, coluna).
+            Pos: (linha, coluna).
         """
         if self.orientacao_tabuleiro == Cor.PRETO:
             return 7 - l, 7 - c
@@ -269,7 +270,12 @@ class Renderer:
             border_radius=15
         )
 
-        pecas = ['q', 'r', 'b', 'n']
+        pecas = [
+            TipoPeca.DAMA.value,
+            TipoPeca.CAVALO.value,
+            TipoPeca.TORRE.value,
+            TipoPeca.BISPO.value
+        ]
         self.menu_promocao_rects.clear()
 
         cor_val = self.controller.state.turno
@@ -308,9 +314,15 @@ class Renderer:
             self.menu_promocao_rects[tipo] = rect
 
 
-    def obter_escolha_promocao(self, pos_mouse: tuple[int, int]) -> str | None:
+    def obter_escolha_promocao(self, pos_mouse: Ponto) -> str | None:
         """
         Retorna o tipo da peça escolhida no menu de promoção.
+
+        Args:
+            pos_mouse (Ponto): Posição do mouse (x, y).
+
+        Returns:
+            str | None: Tipo da peça escolhida, ou None se nenhuma peça foi escolhida.
         """
         for tipo, rect in self.menu_promocao_rects.items():
             if rect.collidepoint(pos_mouse):
@@ -371,14 +383,14 @@ class Renderer:
     def _desenhar_tabuleiro(
         self,
         surface: Surface,
-        dest: tuple[int, int]
+        dest: Ponto
     ) -> None:
         """
         Desenha o tabuleiro na superficie.
 
         Args:
             surface (Surface): Superficie a ser desenhada.
-            dest (tuple[int, int]): Posição da superficie na tela.
+            dest (Ponto): Posição da superficie na tela.
         """
         self.tela.blit(source=surface, dest=dest)
 

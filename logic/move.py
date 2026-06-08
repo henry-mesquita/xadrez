@@ -36,6 +36,8 @@ type JogadasPossiveis   = list[Candidato]
 type InfoEnPassant      = tuple
 # tipagem do ROQUES
 type LadoRoque = Literal["curto", "longo"]
+# Posição (x, y)
+type Ponto = tuple[int, int]
 
 class DadosRoque(TypedDict):
     direito:        str
