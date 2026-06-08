@@ -108,7 +108,10 @@ class Controller:
             posicao_alvo_en_passant=self.state.posicao_alvo_en_passant,
             halfmove_clock=self.state.halfmove_clock,
             ultimo_mov=self.ultimo_mov,
-            foi_promocao=foi_promocao
+            foi_promocao=foi_promocao,
+            vitoria_brancas=self.state.vitoria_brancas,
+            vitoria_negras=self.state.vitoria_negras,
+            empate=self.state.empate
         ))
 
         if peca_capturada is not None:
@@ -220,6 +223,9 @@ class Controller:
         self.state.halfmove_clock = estado.halfmove_clock
         self.ultimo_mov = estado.ultimo_mov
         self.aguardando_promocao = False
+        self.state.vitoria_brancas = estado.vitoria_brancas
+        self.state.vitoria_negras = estado.vitoria_negras
+        self.state.empate = estado.empate
 
         p = estado.peca_movida
 

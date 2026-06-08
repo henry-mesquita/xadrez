@@ -87,3 +87,6 @@ class EstadoHistorico:
     halfmove_clock: int
     ultimo_mov: Movimento | None
     foi_promocao: bool
+    vitoria_brancas: bool
+    vitoria_negras: bool
+    empate: bool
