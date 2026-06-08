@@ -1,5 +1,6 @@
 from constantes import *
-from pecas.peca import Peca, TipoPeca
+from pecas.peca import Peca
+from logic.move import *
 
 
 class Rei(Peca):

@@ -6,12 +6,20 @@ from pecas.torre import Torre
 from pecas.cavalo import Cavalo
 from pecas.rei import Rei
 from .state import GameState
-from .move import TipoMov
-import numpy as np
+from .move import *
 
 
 class Judge:
-    ROQUES = {
+    """
+    Motor de regras da partida de xadrez.
+
+    Responsável por validar movimentos, detectar ataques, verificar
+    xeque, roques, en passant e determinar condições de encerramento
+    da partida, incluindo xeque-mate, afogamento e empates previstos
+    pelas regras oficiais. 
+    """
+
+    ROQUES: MapeamentoRoques  = {
         (Cor.BRANCO, "curto"): {
             "direito": "roque_curto_branco",
             "origem_rei": (7, 4),
@@ -20,7 +28,6 @@ class Judge:
             "destino_torre": (7, 5),
             "casas_seguras": [(7, 5), (7, 6)]
         },
-
         (Cor.BRANCO, "longo"): {
             "direito": "roque_longo_branco",
             "origem_rei": (7, 4),
@@ -29,7 +36,6 @@ class Judge:
             "destino_torre": (7, 3),
             "casas_seguras": [(7, 3), (7, 2)]
         },
-
         (Cor.PRETO, "curto"): {
             "direito": "roque_curto_preto",
             "origem_rei": (0, 4),
@@ -38,7 +44,6 @@ class Judge:
             "destino_torre": (0, 5),
             "casas_seguras": [(0, 5), (0, 6)]
         },
-
         (Cor.PRETO, "longo"): {
             "direito": "roque_longo_preto",
             "origem_rei": (0, 4),
@@ -56,21 +61,21 @@ class Judge:
     def classificar_movimentos(
         self,
         peca: Peca,
-        origem: tuple[int, int],
-        movimentos: list[tuple[int, int]]
-    ) -> list[tuple[tuple[int, int], TipoMov]]:
+        origem: Pos,
+        movimentos: list[Pos]
+    ) -> JogadasPossiveis:
         """
         Classifica movimentos pseudo-legais como normais ou de captura.
 
         Args:
             peca (Peca): A peça que está se movendo.
-            origem (tuple[int, int]): Casa de origem.
-            movimentos (list[tuple[int, int]]): Lista de destinos pseudo-legais.
+            origem (Pos): Casa de origem.
+            movimentos (list[Pos]): Lista de destinos pseudo-legais.
 
         Returns:
-            list[tuple[tuple[int, int], TipoMov]]: Destinos validados com seu tipo.
+            JogadasPossiveis: Destinos validados com seu tipo.
         """
-        movs: list[tuple[tuple[int, int], TipoMov]] = []
+        movs: JogadasPossiveis = []
         for casa in movimentos:
             tipo = self._classificar_movimento(
                 peca=peca,
@@ -83,13 +88,20 @@ class Judge:
 
 
     def buscar_candidatos(
-            self,
-            peca: Peca,
-            origem: tuple[int, int]
-    ) -> list[tuple[tuple[int, int], TipoMov]]:
+        self,
+        peca: Peca,
+        origem: Pos
+    ) -> JogadasPossiveis:
         """
-        Retorna todos os movimentos possíveis (normais e especiais) 
+        Retorna todas as jogadas possíveis (normais e especiais) 
         sem checar se o rei fica em xeque.
+
+        Args:
+            peca (Peca): A peça que está se movendo.
+            origem (Pos): Casa de origem.
+
+        Returns:
+            JogadasPossiveis: Destinos validados com seu tipo.
         """
         pseudo = peca.gerar_pseudo_movimentos(lc=origem)
         
@@ -109,16 +121,16 @@ class Judge:
     def _classificar_movimento(
         self,
         peca: Peca,
-        origem: tuple[int, int],
-        destino_lc: tuple[int, int]
+        origem: Pos,
+        destino_lc: Pos
     ) -> TipoMov | None:
         """
         Valida logicamente se um movimento pode ser realizado.
 
         Args:
             peca (Peca): Peça em movimento.
-            origem (tuple[int, int]): Coordenada de origem.
-            destino_lc (tuple[int, int]): Coordenada de destino.
+            origem (Pos): Coordenada de origem.
+            destino_lc (Pos): Coordenada de destino.
 
         Returns:
             TipoMov | None: Tipo do movimento se válido, None caso contrário.
@@ -155,8 +167,7 @@ class Judge:
         if isinstance(peca, (Bispo, Dama, Torre)):
             if not self.caminho_livre(
                 origem=origem,
-                destino=destino_lc,
-                matriz=self.state.board.matriz
+                destino=destino_lc
             ):
                 return None
 
@@ -168,56 +179,79 @@ class Judge:
         return TipoMov.NORMAL
 
 
-    @staticmethod
     def caminho_livre(
-        origem: tuple[int, int],
-        destino: tuple[int, int],
-        matriz: np.ndarray
+        self,
+        origem: Pos,
+        destino: Pos
     ) -> bool:
         """
         Verifica se há obstáculos entre duas casas para peças deslizantes.
+        Feito exclusivamente para ser usado no roque.
 
         Args:
-            origem (tuple[int, int]): Casa inicial.
-            destino (tuple[int, int]): Casa final.
+            origem (Pos): Casa inicial.
+            destino (Pos): Casa final.
 
         Returns:
             bool: True se o caminho estiver vazio, False caso contrário.
         """
-        delta = (destino[0] - origem[0], destino[1] - origem[1])
-        passo_l = 0 if delta[0] == 0 else (1 if delta[0] > 0 else -1)
-        passo_c = 0 if delta[1] == 0 else (1 if delta[1] > 0 else -1)
+        delta = (
+            destino[0] - origem[0],
+            destino[1] - origem[1]
+        )
+        if delta[0] == 0:
+            passo_l = 0
+        else:
+            if delta[0] > 0:
+                passo_l = 1
+            else:
+                passo_l = -1
+
+        if delta[1] == 0:
+            passo_c = 0
+        else:
+            if delta[1] > 0:
+                passo_c = 1
+            else:
+                passo_c = -1
 
         if passo_l == 0 and passo_c == 0:
             return False
 
         atual = (origem[0] + passo_l, origem[1] + passo_c)
         while atual != destino:
-            if matriz[atual[0], atual[1]] is not None:
+            if self.state.board.matriz[atual[0], atual[1]] is not None:
                 return False
             atual = (atual[0] + passo_l, atual[1] + passo_c)
         return True
 
 
-    def adicionar_en_passant(self, mov: list) -> None:
+    def adicionar_en_passant(self, mov: JogadasPossiveis) -> None:
         """
         Adiciona as casas de en passant na lista de movimentos possíveis.
 
         Args:
-            mov (list): Lista de movimentos.
-
-        Returns:
-            list: Lista de movimentos com os movimentos de en passant adicionados.
+            mov (JogadasPossiveis): Lista de movimentos possíveis.  
         """
         mov.append(self.state.en_passant)
     
 
     def adicionar_roques(
         self,
-        cor: str,
-        mov: list,
+        cor: Cor,
+        mov: JogadasPossiveis,
         xeque: bool
-    ) -> list[tuple[int, int], TipoMov]:
+    ) -> JogadasPossiveis:
+        """
+        Adiciona os roques na lista de movimentos possíveis.
+
+        Args:
+            cor (Cor): Cor do rei.
+            mov (JogadasPossiveis): Lista de movimentos possíveis.
+
+        Returns:
+            JogadasPossiveis: Lista de movimentos possíveis.
+        """
         if self.verificar_roque(cor, "curto", xeque):
             destino = (
                 self.ROQUES[(cor, "curto")]["destino_rei"]
@@ -245,7 +279,7 @@ class Judge:
         Retorna True se o roque pode ser realizado.
 
         Args:
-            cor (str): Cor do rei.
+            cor (Cor): Cor do rei.
             lado (str): "curto" ou "longo".
 
         Returns:
@@ -263,8 +297,7 @@ class Judge:
 
         if not self.caminho_livre(
             origem=dados["origem_rei"],
-            destino=dados["origem_torre"],
-            matriz=self.state.board.matriz
+            destino=dados["origem_torre"]
         ):
             return False
 
@@ -275,7 +308,23 @@ class Judge:
         return True
 
 
-    def casa_atacada(self, l: int, c: int, cor_que_seria_atacada: str) -> bool:
+    def casa_atacada(
+        self,
+        l: int,
+        c: int,
+        cor_que_seria_atacada: str
+    ) -> bool:
+        """
+        Verifica se a casa (l, c) estiver sob ataque.
+
+        Args:
+            l (int): Linha.
+            c (int): Coluna.
+            cor_que_seria_atacada (str): Cor da peça que seria atacada.
+
+        Returns:
+            bool: True se estiver sob ataque, False caso contrário.
+        """
         pos = (l, c)
         
         horizontais = self.verificar_horizontais(pos, cor_que_seria_atacada)
@@ -287,12 +336,12 @@ class Judge:
         return horizontais or diagonais or cavalo or rei or peao
 
 
-    def verificar_xeque(self, cor: str) -> bool:
+    def verificar_xeque(self, cor: Cor) -> bool:
         """
-        Verifica se o rei da cor informada está sob ataque.
+        Verifica se a casa da cor informada está sob ataque.
 
         Args:
-            cor (str): Cor do rei a ser verificado.
+            cor (Cor): Cor do rei a ser verificado.
 
         Returns:
             bool: True se estiver em xeque, False caso contrário.
@@ -331,15 +380,15 @@ class Judge:
 
     def verificar_horizontais(
         self,
-        pos: tuple[int, int],
-        cor_defendendo: str
+        pos: Pos,
+        cor_defendendo: Cor
     ) -> bool:
         """
-        Verifica se o rei estiver sob ataque por peças horizontais.
+        Verifica se a casa estiver sob ataque por peças horizontais.
 
         Args:
-            lc_rei (tuple[int, int]): Posição do rei.
-            cor (str): Cor do rei.
+            pos (Pos): Posição da peça.
+            cor_defendendo (Cor): Cor da peça.
 
         Returns:
             bool: True se estiver em xeque, False caso contrário.
@@ -368,15 +417,15 @@ class Judge:
 
     def verificar_diagonais(
         self,
-        pos: tuple[int, int],
-        cor_defendendo: str
+        pos: Pos,
+        cor_defendendo: Cor
     ) -> bool:
         """
-        Verifica se o rei estiver sob ataque por peças diagonais.
+        Verifica se a casa estiver sob ataque por peças diagonais.
 
         Args:
-            lc_rei (tuple[int, int]): Posição do rei.
-            cor (str): Cor do rei.
+            pos (Pos): Posição da peça.
+            cor_defendendo (Cor): Cor da peça.
 
         Returns:
             bool: True se estiver em xeque, False caso contrário.
@@ -404,15 +453,15 @@ class Judge:
 
     def verificar_cavalo(
         self,
-        pos: tuple[int, int],
-        cor_defendendo: str
+        pos: Pos,
+        cor_defendendo: Cor
     ) -> bool:
         """
-        Verifica se o rei estiver sob ataque por peças de cavalo.
+        Verifica se o a casa estiver sob ataque por peças de cavalo.
 
         Args:
-            lc_rei (tuple[int, int]): Posição do rei.
-            cor (str): Cor do rei.
+            pos (Pos): Posição da peça.
+            cor_defendendo (Cor): Cor da peça.
 
         Returns:
             bool: True se estiver em xeque, False caso contrário.
@@ -438,15 +487,15 @@ class Judge:
 
     def verificar_rei(
         self,
-        pos: tuple[int, int],
-        cor_defendendo: str
+        pos: Pos,
+        cor_defendendo: Cor
     ) -> bool:
         """
-        Verifica se o rei estiver sob ataque por peças de rei.
+        Verifica se a casa estiver sob ataque por um rei.
 
         Args:
-            lc_rei (tuple[int, int]): Posição do rei.
-            cor (str): Cor do rei.
+            pos (Pos): Posição da peça.
+            cor_defendendo (Cor): Cor da peça.
 
         Returns:
             bool: True se estiver em xeque, False caso contrário.
@@ -472,15 +521,15 @@ class Judge:
 
     def verificar_peao(
         self,
-        pos: tuple[int, int],
-        cor_defendendo: str
+        pos: Pos,
+        cor_defendendo: Cor
     ) -> bool:
         """
-        Verifica se o rei estiver sob ataque por peças de peão.
+        Verifica se a casa estiver sob ataque por peões.
 
         Args:
-            lc_rei (tuple[int, int]): Posição do rei.
-            cor (str): Cor do rei.
+            pos (Pos): Posição da peça.
+            cor_defendendo (Cor): Cor da peça.
 
         Returns:
             bool: True se estiver em xeque, False caso contrário.
@@ -502,14 +551,14 @@ class Judge:
 
     def verificar_fim_de_jogo(
         self,
-        cor_atual: str,
+        cor_atual: Cor,
         tem_mov_legais: bool = False
     ) -> bool:
         """
         Agrega todas as checagens de fim de partida.
 
         Args:
-            cor_atual (str): Cor do jogador atual.
+            cor_atual (Cor): Cor do jogador atual.
 
         Returns:
             bool: True se o jogo terminou.
@@ -629,7 +678,7 @@ class Judge:
 
     def _verificar_xeque_mate_ou_afogamento(
         self,
-        cor_atual: str,
+        cor_atual: Cor,
         tem_movimentos_legais: bool = False
     ) -> bool:
         """

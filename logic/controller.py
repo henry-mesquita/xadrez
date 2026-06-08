@@ -1,5 +1,5 @@
 from constantes import *
-from pecas.peca import Peca, Cor, TipoPeca
+from pecas.peca import Peca, Cor
 from pecas.peao import Peao
 from pecas.rei import Rei
 from pecas.torre import Torre

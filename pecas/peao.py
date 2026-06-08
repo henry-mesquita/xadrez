@@ -1,5 +1,6 @@
 from constantes import *
-from pecas.peca import Peca, Cor, TipoPeca
+from pecas.peca import Peca, Cor
+from logic.move import *
 
 
 class Peao(Peca):

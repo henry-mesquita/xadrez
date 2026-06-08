@@ -1,6 +1,17 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from pecas.peca import Peca
+from typing import TypedDict, Literal
+from pecas.peca import Cor
+
+
+class TipoPeca(Enum):
+    PEAO    = 'p'
+    TORRE   = 'r'
+    CAVALO  = 'n'
+    BISPO   = 'b'
+    DAMA    = 'q'
+    REI     = 'k'
 
 
 class TipoMov(Enum):
@@ -19,6 +30,19 @@ type Candidato          = tuple[Pos, TipoMov]
 type JogadasPossiveis   = list[Candidato]
 # informação que guarda en passant
 type InfoEnPassant      = tuple
+# tipagem do ROQUES
+type LadoRoque = Literal["curto", "longo"]
+
+class DadosRoque(TypedDict):
+    direito:        str
+    origem_rei:     Pos
+    destino_rei:    Pos
+    origem_torre:   Pos
+    destino_torre:  Pos
+    casas_seguras:  list[Pos]
+
+# o dicionário completo é uma tradução de (Cor, Lado) para DadosRoque
+type MapeamentoRoques = dict[tuple[Cor, LadoRoque], DadosRoque]
 
 
 @dataclass

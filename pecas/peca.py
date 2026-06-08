@@ -1,20 +1,10 @@
 from dataclasses import dataclass
-from enum import Enum
 
 
 @dataclass(frozen=True)
 class Cor:
     BRANCO = 'w'
     PRETO = 'b'
-
-
-class TipoPeca(Enum):
-    PEAO    = 'p'
-    TORRE   = 'r'
-    CAVALO  = 'n'
-    BISPO   = 'b'
-    DAMA    = 'q'
-    REI     = 'k'
 
 
 class Peca:
