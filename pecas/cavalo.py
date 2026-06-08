@@ -1,6 +1,6 @@
 from constantes import *
-from pecas.peca import Peca, Coord
 from logic.move import *
+from pecas.peca import Peca, Coord
 
 
 class Cavalo(Peca):
@@ -15,6 +15,13 @@ class Cavalo(Peca):
         posicao: Coord,
         valor: float
     ) -> None:
+        """
+        Inicializa a peça de cavalo.
+
+        Args:
+            cor (Cor): Cor da peça.
+            posicao (Coord): Posição inicial da peça.
+        """
         super().__init__(cor, posicao)
         self.tipo: TipoPeca = TipoPeca.CAVALO
         self.valor: float = valor
@@ -22,19 +29,18 @@ class Cavalo(Peca):
 
     def gerar_pseudo_movimentos(
         self,
-        lc: tuple[int, int]
-    ) -> list[tuple[int, int]]:
+        lc: Pos
+    ) -> list[Pos]:
         """
         Gera os movimentos pseudo legais do cavalo.
 
         Args:
-            matriz (np.ndarray): Matriz do tabuleiro.
-            lc (tuple[int, int]): Linha e coluna da peça.
+            lc (Pos): Linha e coluna da peça.
 
         Returns:
-            list: Lista de movimentos possíveis.
+            list[Pos]: Lista de movimentos possíveis.
         """
-        mov: list[tuple[int, int]] = []
+        mov: list[Pos] = []
 
         offsets_cavalo = [
             (-2, -1),
@@ -47,8 +53,9 @@ class Cavalo(Peca):
             (1, 2)
         ]
 
-        for offset in offsets_cavalo:
-            casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
+        for offset_l, offset_c in offsets_cavalo:
+            l, c = lc
+            casa_destino = (l + offset_l, c + offset_c)
             if lc_valido(casa_destino[0], casa_destino[1]):
                 mov.append(casa_destino)
 

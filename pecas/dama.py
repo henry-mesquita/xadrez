@@ -1,6 +1,6 @@
 from constantes import *
-from pecas.peca import Peca, Coord
 from logic.move import *
+from pecas.peca import Peca, Coord
 
 
 class Dama(Peca):
@@ -15,6 +15,13 @@ class Dama(Peca):
         posicao: Coord,
         valor: float
     ) -> None:
+        """
+        Inicializa a peça de dama.
+
+        Args:
+            cor (Cor): Cor da peça.
+            posicao (Coord): Posição inicial da peça.
+        """
         super().__init__(cor, posicao)
         self.tipo: TipoPeca = TipoPeca.DAMA
         self.valor: float = valor
@@ -22,19 +29,18 @@ class Dama(Peca):
 
     def gerar_pseudo_movimentos(
         self,
-        lc: tuple[int, int]
-    ) -> list[tuple[int, int]]:
+        lc: Pos
+    ) -> list[Pos]:
         """
         Gera os movimentos pseudo legais da dama.
 
         Args:
-            matriz (np.ndarray): Matriz do tabuleiro.
-            lc (tuple[int, int]): Linha e coluna da peça.
+            lc (Pos): Linha e coluna da peça.
 
         Returns:
-            list: Lista de movimentos possíveis.
+            list[Pos]: Lista de movimentos possíveis.
         """
-        mov: list[tuple[int, int]] = []
+        mov: list[Pos] = []
 
         direcoes = ((0, 1), (0, -1), (1, 0), (-1, 0)) # horizontais
 

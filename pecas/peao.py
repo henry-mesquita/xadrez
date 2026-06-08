@@ -1,6 +1,6 @@
 from constantes import *
-from pecas.peca import Peca, Coord
 from logic.move import *
+from pecas.peca import Peca, Coord
 
 
 class Peao(Peca):
@@ -15,6 +15,13 @@ class Peao(Peca):
         posicao: Coord,
         valor: float
     ) -> None:
+        """
+        Inicializa a peça de peão.
+
+        Args:
+            cor (Cor): Cor da peça.
+            posicao (Coord): Posição inicial da peça.
+        """
         super().__init__(cor, posicao)
         self.tipo: TipoPeca = TipoPeca.PEAO
         self.valor: float = valor
@@ -22,22 +29,20 @@ class Peao(Peca):
 
     def gerar_pseudo_movimentos(
         self,
-        lc: tuple[int, int]
-    ) -> list[tuple[int, int]]:
+        lc: Pos
+    ) -> list[Pos]:
         """
         Gera os movimentos pseudo legais caso o tipo da peça seja o peão (p).
 
         Args:
-            matriz (np.ndarray): Matriz do tabuleiro.
-            lc (tuple[int, int]): Linha e coluna da peça.
+            lc (Pos): Linha e coluna da peça.
 
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov: list[tuple[int, int]] = []
+        mov: list[Pos] = []
 
         if self.cor == Cor.BRANCO:
-            
             offsets_peao = [
                 (-1, 0)
             ]
@@ -63,13 +68,15 @@ class Peao(Peca):
                 offsets_peao.append((2, 0))
 
         
-        for offset in offsets_peao:
-            casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
+        for offset_l, offset_c in offsets_peao:
+            l, c = lc
+            casa_destino = (l + offset_l, c + offset_c)
             if lc_valido(casa_destino[0], casa_destino[1]):
                 mov.append(casa_destino)
-        
-        for offset_captura in offsets_captura_peao:
-            casa_destino = (lc[0] + offset_captura[0], lc[1] + offset_captura[1])
+
+        for offset_l, offset_c in offsets_captura_peao:
+            l, c = lc
+            casa_destino = (l + offset_l, c + offset_c)
             if lc_valido(casa_destino[0], casa_destino[1]):
                 mov.append(casa_destino)
 

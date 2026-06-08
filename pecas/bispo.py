@@ -1,6 +1,6 @@
 from constantes import *
-from pecas.peca import Peca, Coord
 from logic.move import *
+from pecas.peca import Peca, Coord
 
 
 class Bispo(Peca):
@@ -16,6 +16,13 @@ class Bispo(Peca):
         posicao: Coord,
         valor: float
     ) -> None:
+        """
+        Inicializa a peça de bispo.
+
+        Args:
+            cor (Cor): Cor da peça.
+            posicao (Coord): Posição inicial da peça.
+        """
         super().__init__(cor, posicao)
         self.tipo: TipoPeca = TipoPeca.BISPO
         self.valor: float = valor
@@ -23,28 +30,26 @@ class Bispo(Peca):
 
     def gerar_pseudo_movimentos(
         self,
-        lc: tuple[int, int]
-    ) -> list[tuple[int, int]]:
+        lc: Pos
+    ) -> list[Pos]:
         """
         Gera os movimentos pseudo legais do bispo.
 
         Args:
-            matriz (np.ndarray): Matriz do tabuleiro.
-            lc (tuple[int, int]): Linha e coluna da peça.
+            lc (Pos): Linha e coluna da peça.
 
         Returns:
-            list: Lista de movimentos possíveis.
+            list[Pos]: Lista de movimentos possíveis.
         """
-        mov: list[tuple[int, int]] = []
+        mov: list[Pos] = []
 
         direcoes = ((-1, -1), (-1, 1), (1, -1), (1, 1))
 
-        for direcao in direcoes:
-            l = lc[0]
-            c = lc[1]
+        for dl, dc in direcoes:
+            l, c = lc
             while True:
-                l += direcao[0]
-                c += direcao[1]
+                l += dl
+                c += dc
 
                 if not lc_valido(l, c):
                     break

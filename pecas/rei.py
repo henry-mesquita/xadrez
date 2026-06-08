@@ -1,6 +1,6 @@
 from constantes import *
-from pecas.peca import Peca, Coord
 from logic.move import *
+from pecas.peca import Peca, Coord
 
 
 class Rei(Peca):
@@ -22,19 +22,18 @@ class Rei(Peca):
 
     def gerar_pseudo_movimentos(
         self,
-        lc: tuple[int, int]
-    ) -> list[tuple[int, int]]:
+        lc: Pos
+    ) -> list[Pos]:
         """
         Gera os movimentos pseudo legais para o rei (k).
 
         Args:
-            matriz (np.ndarray): Matriz do tabuleiro.
             lc (tuple[int, int]): Linha e coluna da peça.
 
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov: list[tuple[int, int]] = []
+        mov: list[Pos] = []
 
         offsets_rei = [
             (0, 1),
@@ -47,8 +46,9 @@ class Rei(Peca):
             (-1, -1)
         ]
 
-        for offset in offsets_rei:
-            casa_destino = (lc[0] + offset[0], lc[1] + offset[1])
+        for offset_l, offset_c in offsets_rei:
+            l, c = lc
+            casa_destino = (l + offset_l, c + offset_c)
             if lc_valido(casa_destino[0], casa_destino[1]):
                 mov.append(casa_destino)
 

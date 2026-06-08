@@ -1,6 +1,6 @@
 from constantes import *
-from pecas.peca import Peca, Coord
 from logic.move import *
+from pecas.peca import Peca, Coord
 
 
 class Torre(Peca):
@@ -23,25 +23,23 @@ class Torre(Peca):
 
     def gerar_pseudo_movimentos(
         self,
-        lc: tuple[int, int]
-    ) -> list[tuple[int, int]]:
+        lc: Pos
+    ) -> list[Pos]:
         """
         Gera os movimentos pseudo legais da torre.
 
         Args:
-            matriz (np.ndarray): Matriz do tabuleiro.
-            lc (tuple[int, int]): Linha e coluna da peça.
+            lc (Pos): Linha e coluna da peça.
 
         Returns:
             list: Lista de movimentos possíveis.
         """
-        mov: list[tuple[int, int]] = []
+        mov: list[Pos] = []
 
         direcoes = ((0, 1), (0, -1), (1, 0), (-1, 0))
 
         for direcao in direcoes:
-            l = lc[0]
-            c = lc[1]
+            l, c = lc
             while True:
                 l += direcao[0]
                 c += direcao[1]
