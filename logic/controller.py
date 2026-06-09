@@ -483,10 +483,7 @@ class Controller:
         Args:
             p (Peca): Instância da peça a ser movimentada.
         """
-        origem = self.state.board.achar_lc_peca(peca=p)
-        if origem is None:
-            self.limpar_movimentos()
-            return
+        origem = p.posicao
 
         candidatos = self.judge.buscar_candidatos(p, origem)
         

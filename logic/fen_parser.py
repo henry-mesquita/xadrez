@@ -1,5 +1,6 @@
 from pecas.peca import Cor
 from pecas.peao import Peao
+from pecas.rei import Rei
 from .state import GameState
 from .move import TipoMov
 from .board import Board
@@ -41,11 +42,14 @@ def carregar_posicao_fen(
                 j += int(ch)
             else:
                 cor_peca = Cor.BRANCO if ch.isupper() else Cor.PRETO
-                board.matriz[i, j] = criar_peca(
-                    tipo=ch.lower(),
-                    cor=cor_peca,
-                    pos=[i, j]
-                )
+
+                peca_nova = criar_peca(tipo=ch.lower(), cor=cor_peca, pos=[i, j])
+                board.matriz[i, j] = peca_nova
+
+                if isinstance(peca_nova, Rei):
+                    board.reis[cor_peca] = peca_nova
+
+                board.matriz[i, j] = peca_nova
                 j += 1
 
     state.turno = turno

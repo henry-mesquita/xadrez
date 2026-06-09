@@ -97,6 +97,7 @@ class Xadrez:
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_q:
                 self.renderer.inverter_visao()
+                self.renderer.mostrar_tabuleiro_no_terminal()
 
             if event.key == pg.K_z and DESFAZER_MOVIMENTO:
                 self.controller.desfazer_movimento()
@@ -128,8 +129,8 @@ class Xadrez:
 
             if DEBUG and not self.controller.aguardando_promocao:
                 self.renderer.mostrar_tabuleiro_no_terminal()
-                print(f"Rei branco em xeque: {self.controller.verificar_xeque(cor=Cor.BRANCO)}")
-                print(f"Rei preto em xeque: {self.controller.verificar_xeque(cor=Cor.PRETO)}")
+                print(f"Rei branco em xeque: {self.controller.judge.verificar_xeque(cor=Cor.BRANCO)}")
+                print(f"Rei preto em xeque: {self.controller.judge.verificar_xeque(cor=Cor.PRETO)}")
         else:
             self.renderer.sincronizar_peca_ao_tabuleiro(peca=peca)
 

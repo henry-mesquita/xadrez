@@ -221,32 +221,13 @@ class Judge:
         if cor not in (Cor.PRETO, Cor.BRANCO):
             raise ValueError('Cor precisa ser "w" ou "b"')
         
-        lc_rei = self.state.board.achar_lc_rei(cor=cor)
-        if lc_rei is None:
+        rei = self.state.board.reis[cor]
+        if not rei:
             return False
+        
+        l, c = rei.posicao
 
-        horizontais = self.verificar_horizontais(
-            pos=lc_rei,
-            cor_defendendo=cor
-        )
-        diagonais = self.verificar_diagonais(
-            pos=lc_rei,
-            cor_defendendo=cor
-        )
-        cavalo = self.verificar_cavalo(
-            pos=lc_rei,
-            cor_defendendo=cor
-        )
-        rei = self.verificar_rei(
-            pos=lc_rei,
-            cor_defendendo=cor
-        )
-        peao = self.verificar_peao(
-            pos=lc_rei,
-            cor_defendendo=cor
-        )
-
-        return horizontais or diagonais or cavalo or rei or peao
+        return self.casa_atacada(l, c, cor)
 
 
     def verificar_horizontais(

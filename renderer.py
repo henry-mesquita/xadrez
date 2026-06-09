@@ -349,7 +349,7 @@ class Renderer:
         Args:
             surface (Surface): Surface da tela.
         """
-        pos = self.controller.state.board.achar_lc_rei(cor=Cor.PRETO)
+        pos = self.controller.state.board.reis[Cor.PRETO].posicao
         if pos:
             l_vis, c_vis = self.transformar_coords(pos[0], pos[1])
             x = c_vis * TAM_CASA + TAB_POS[0]
@@ -368,7 +368,7 @@ class Renderer:
         Args:
             surface (Surface): Surface da tela.
         """
-        pos = self.controller.state.board.achar_lc_rei(Cor.BRANCO)
+        pos = self.controller.state.board.reis[Cor.BRANCO].posicao
         if pos:
             l_vis, c_vis = self.transformar_coords(pos[0], pos[1])
             x = c_vis * TAM_CASA + TAB_POS[0]
