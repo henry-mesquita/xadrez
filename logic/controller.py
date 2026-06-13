@@ -501,3 +501,25 @@ class Controller:
         Limpa os movimentos movimentos possíveis.
         """
         self.movimentos_possiveis.clear()
+
+
+    def obter_todos_lances_legais_do_turno(self) -> list[Movimento]:
+            """
+            Varre o tabuleiro usando a mesma lógica de validação do jogo humano
+            e coleta todos os Movimentos válidos para o turno atual.
+            """
+            lances_legais = []
+            turno_atual = self.state.turno
+            matriz = self.state.board.matriz
+
+            for l in range(8):
+                for c in range(8):
+                    peca = matriz[l, c]
+                    if peca and peca.cor == turno_atual:
+                        self.gerar_mov_peca(peca)
+                        
+                        for destino, _ in self.movimentos_possiveis:
+                            lances_legais.append(Movimento(origem=(l, c), destino=destino))
+                            
+            self.limpar_movimentos()
+            return lances_legais

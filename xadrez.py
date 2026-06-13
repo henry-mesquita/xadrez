@@ -5,6 +5,7 @@ from logic.controller import Controller, Movimento
 from logic.move import lc_valido
 from pygame import Vector2 as vetor
 from pecas.peca import Cor, Peca
+from logic.player import JogadorHumano, IAAleatoria
 
 
 class Xadrez:
@@ -23,6 +24,15 @@ class Xadrez:
         self.running = True
         self.peca_selecionada = None
 
+        self.jogadores = {
+            Cor.BRANCO: JogadorHumano(Cor.BRANCO),
+            Cor.PRETO: IAAleatoria(Cor.PRETO)
+        }
+        
+        for cor, obj in self.jogadores.items():
+            if isinstance(obj, JogadorHumano):
+                self.cor_do_humano = cor
+
 
     def _inicializar_renderer(self) -> None:
         """
@@ -40,18 +50,34 @@ class Xadrez:
             mostrar_fps (bool): Se True, exibe o contador de frames.
         """
         self._inicializar_renderer()
+        
+        if hasattr(self, 'cor_do_humano'):
+            self.renderer.orientacao_tabuleiro = self.cor_do_humano
+
         while self.running:
             try:
                 self.event_loop()
-                self.renderer.draw()
-                
-                if DEBUG:
-                    self.renderer.mostrar_fps(
-                        fps=self.clock.get_fps()
-                    )
 
+                if not self.controller.finalizado and not self.controller.aguardando_promocao:
+                    turno_atual = self.controller.state.turno
+                    jogador_atual = self.jogadores[turno_atual]
+
+                    if isinstance(jogador_atual, IAAleatoria):
+                        lances_validos = self.controller.obter_todos_lances_legais_do_turno()
+                        
+                        lance_escolhido = jogador_atual.decidir_lance(lances_validos)
+                        
+                        if lance_escolhido:
+                            l_orig, c_orig = lance_escolhido.origem
+                            peca_ia = self.controller.state.board.matriz[l_orig, c_orig]
+                            
+                            if peca_ia:
+                                self.processar_jogada(mov=lance_escolhido, peca=peca_ia)
+
+                self.renderer.draw()
                 pg.display.flip()
                 self.clock.tick(FRAMERATE)
+                
             except KeyboardInterrupt:
                 self.running = False
                 print('Jogo finalizado pelo teclado.')
@@ -72,7 +98,7 @@ class Xadrez:
         Captura e encaminha eventos do sistema e entrada do usuário.
 
         Args:
-            event (pg.Event): Evento capturado pelo pygame.
+            event (pg.Event): Evento capturado pelo Pygame.
         """
         if event.type == pg.QUIT:
             self.running = False
@@ -85,39 +111,36 @@ class Xadrez:
                     self.controller.promover_peao(escolha)
                     self.renderer.inicializar_sprites_tabuleiro()
                     self.renderer.sincronizar_todas_pecas()
-
-                    if DEBUG:
-                        xeque_branco = self.controller.verificar_xeque(cor=Cor.BRANCO)
-                        xeque_preto = self.controller.verificar_xeque(cor=Cor.PRETO)
-                        self.renderer.mostrar_tabuleiro_no_terminal()
-                        print(f"Rei branco em xeque: {xeque_branco}")
-                        print(f"Rei preto em xeque: {xeque_preto}")
             return
 
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_q:
                 self.renderer.inverter_visao()
-                self.renderer.mostrar_tabuleiro_no_terminal()
-
             if event.key == pg.K_z and DESFAZER_MOVIMENTO:
                 self.controller.desfazer_movimento()
                 self.controller.limpar_movimentos()
                 self.renderer.sincronizar_todas_pecas()
         
         if not self.controller.finalizado:
-            movimento, peca_movida = self.handle_input(event=event)
-            if movimento and peca_movida:
-                self.processar_jogada(mov=movimento, peca=peca_movida)
+            turno_atual = self.controller.state.turno
+            jogador_atual = self.jogadores[turno_atual]
+            
+            if isinstance(jogador_atual, JogadorHumano):
+                movimento, peca_movida = self.handle_input(event=event)
+                if movimento and peca_movida:
+                    self.processar_jogada(mov=movimento, peca=peca_movida)
 
 
     def processar_jogada(self, mov: Movimento, peca: Peca) -> None:
         """
-        Processa o movimento realizado pelo jogador.
+        Processa o movimento realizado.
 
         Args:
-            mov (Movimento): O movimento realizado pelo jogador.
-            peca (Peca): A peça movida.
+            mov (Movimento): Movimento realizado pelo jogador humano.
+            peca (Peca): Peca movida pelo jogador humano.
         """
+        self.controller.gerar_mov_peca(peca)
+
         sucesso = self.controller.movimento_possivel(mov=mov)
 
         if sucesso:
@@ -126,11 +149,14 @@ class Xadrez:
 
             self.peca_selecionada = None
             self.origem_selecionada = None
+            if hasattr(self.renderer, 'peca_arrastada'):
+                self.renderer.peca_arrastada = None
+            if hasattr(self.renderer, 'origem_mov'):
+                self.renderer.origem_mov = None
+            self.controller.limpar_movimentos()
 
             if DEBUG and not self.controller.aguardando_promocao:
                 self.renderer.mostrar_tabuleiro_no_terminal()
-                print(f"Rei branco em xeque: {self.controller.judge.verificar_xeque(cor=Cor.BRANCO)}")
-                print(f"Rei preto em xeque: {self.controller.judge.verificar_xeque(cor=Cor.PRETO)}")
         else:
             self.renderer.sincronizar_peca_ao_tabuleiro(peca=peca)
 
@@ -140,48 +166,40 @@ class Xadrez:
         Lida com cliques e arrasto de peças.
 
         Args:
-            event (pg.Event): O evento capturado pelo pygame.
+            event (pg.Event): Evento capturado pelo Pygame.
+
+        Returns:
+            tuple: Movimento e peça movida.
         """
         if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             l, c = self.renderer.obter_lc_pelo_mouse()
-
-            if not lc_valido(l, c):
-                return None, None
-
-            peca_clicada = self.controller.state.board.matriz[l, c]
-
-            if peca_clicada and peca_clicada.cor == self.controller.state.turno:
-                self.renderer.sincronizar_peca_ao_tabuleiro(peca_clicada)
-
-                if self.peca_selecionada == peca_clicada:
+            
+            if lc_valido(l, c):
+                peca = self.controller.state.board.matriz[l, c]
+                turno_atual = self.controller.state.turno
+                
+                if self.peca_selecionada:
+                    mov = Movimento(origem=self.origem_selecionada, destino=(l, c))
+                    if any(
+                        mov.destino == destino
+                        for destino, _ in self.controller.movimentos_possiveis
+                    ):
+                        return mov, self.peca_selecionada
+                
+                if not peca or peca.cor != turno_atual:
                     self.peca_selecionada = None
                     self.origem_selecionada = None
                     self.renderer.peca_arrastada = None
                     self.controller.limpar_movimentos()
                     return None, None
 
-                self.peca_selecionada = peca_clicada
+                self.peca_selecionada = peca
                 self.origem_selecionada = (l, c)
-                self.controller.gerar_mov_peca(peca_clicada)
-
-                self.renderer.peca_arrastada = peca_clicada
+                
+                self.controller.gerar_mov_peca(self.peca_selecionada)
+                self.renderer.drag_offset = vetor(event.pos) - self.peca_selecionada.rect.topleft
+                self.renderer.peca_arrastada = self.peca_selecionada
                 self.renderer.origem_mov = (l, c)
-                self.renderer.drag_offset = vetor(event.pos) - vetor(peca_clicada.rect.topleft)
-                return None, None
-
-            if self.peca_selecionada:
-                mov = Movimento(origem=self.origem_selecionada, destino=(l, c))
-                
-                if any(
-                    mov.destino == destino
-                    for destino, _ in self.controller.movimentos_possiveis
-                ):
-                    return mov, self.peca_selecionada
-                
-                self.peca_selecionada = None
-                self.origem_selecionada = None
-                self.renderer.peca_arrastada = None
-                self.controller.limpar_movimentos()
 
         elif event.type == pg.MOUSEMOTION:
             if self.renderer.peca_arrastada:
@@ -198,10 +216,17 @@ class Xadrez:
                 self.renderer.peca_arrastada = None
                 self.renderer.origem_mov = None
 
-                if destino == origem:
-                    self.renderer.sincronizar_peca_ao_tabuleiro(peca=peca)
-                    return None, None
-
-                return Movimento(origem=origem, destino=destino), peca
+                if destino != origem:
+                    if any(
+                        destino == d
+                        for d, _ in self.controller.movimentos_possiveis
+                    ):
+                        return Movimento(origem=origem, destino=destino), peca
+                    
+                    self.peca_selecionada = None
+                    self.origem_selecionada = None
+                    self.controller.limpar_movimentos()
+                
+                self.renderer.sincronizar_peca_ao_tabuleiro(peca=peca)
 
         return None, None
