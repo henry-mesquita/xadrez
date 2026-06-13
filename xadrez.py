@@ -6,6 +6,7 @@ from logic.move import lc_valido
 from pygame import Vector2 as vetor
 from pecas.peca import Cor, Peca
 from logic.player import JogadorHumano, IAAleatoria
+from random import shuffle
 
 
 class Xadrez:
@@ -17,29 +18,36 @@ class Xadrez:
     Funciona como ponto central de controle da aplicação.
     """
     def __init__(self) -> None:
-        """
-        Inicializa o núcleo do jogo, instanciando a controller e renderer.
-        """
         self.controller = Controller()
         self.running = True
         self.peca_selecionada = None
+        self.jogadores = {}
+
+        participantes = [JogadorHumano, IAAleatoria]
+        self.configurar_jogadores(participantes)
+
+
+    def configurar_jogadores(self, participantes: list) -> None:
+        shuffle(participantes)
 
         self.jogadores = {
-            Cor.BRANCO: JogadorHumano(Cor.BRANCO),
-            Cor.PRETO: IAAleatoria(Cor.PRETO)
+            Cor.BRANCO: participantes[0](Cor.BRANCO),
+            Cor.PRETO:  participantes[1](Cor.PRETO)
         }
-        
-        for cor, obj in self.jogadores.items():
-            if isinstance(obj, JogadorHumano):
-                self.cor_do_humano = cor
 
 
     def _inicializar_renderer(self) -> None:
-        """
-        Inicializa o gerenciador visual do jogo.
-        """
         self.renderer = Renderer(controller=self.controller)
         self.clock = pg.time.Clock()
+        
+        orientacao = Cor.BRANCO
+        
+        for cor, jogador in self.jogadores.items():
+            if isinstance(jogador, JogadorHumano):
+                orientacao = cor
+                break
+                
+        self.renderer.orientacao_tabuleiro = orientacao
 
 
     def run(self) -> None:
